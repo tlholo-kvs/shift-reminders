@@ -1,0 +1,7 @@
+{
+  "task_id": "task-shift-reminders",
+  "task_description": "Build a complete Flutter mobile app (Android + iOS) that imports a CSV of shift schedules and automatically creates alarms and notifications based on predefined, user-editable rules.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}

@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "UI layer: rewrite lib/main.dart, create lib/app.dart (GoRouter), all four screens, and the ShiftTile widget. Depends on FEAT-001 being complete (all models and services must exist).",
+  "status": "pending",
+  "steps": [
+    "Step 1 — lib/main.dart: Rewrite to async main(): call WidgetsFlutterBinding.ensureInitialized(), tz.initializeTimeZones() (import package:timezone/data/latest_all.dart as tz), instantiate AlarmService and StorageService, call await alarmService.init(), then runApp(ShiftRemindersApp(alarmService: alarmService, storageService: storageService)).",
+    "Step 2 — lib/app.dart: Define GoRouter with routes: '/' -> HomeScreen, '/import' -> ImportScreen, '/rules' -> RulesScreen, '/permissions' -> PermissionsScreen. Add a redirect on '/' that calls storageService.isFirstLaunch() and redirects to '/permissions' if true. Create ShiftRemindersApp StatelessWidget that receives AlarmService and StorageService as constructor params and returns MaterialApp.router. Pass services to screens via GoRouter extra where needed.",
+    "Step 3 — lib/widgets/shift_tile.dart: Create ShiftTile StatelessWidget. Constructor: ShiftTile({required Shift shift, required ShiftRule? rule}). Show ListTile with: title = DateFormat('EEE d MMM yyyy').format(shift.date), subtitle = rule?.displayName ?? shift.type.name, trailing = rule != null && shift.type != ShiftType.off ? formatted alarm time : 'No alarm'. Apply greyed-out TextStyle when shift.isPast.",
+    "Step 4 — lib/screens/permissions_screen.dart: StatefulWidget. In initState do nothing; show explanatory text and 'Grant Permissions' button. On button tap: request Permission.notification (both platforms) and Permission.scheduleExactAlarm (Android only, guarded by Platform.isAndroid). After request, call storageService.setOnboarded() then context.go('/'). Also show 'Skip' TextButton that just calls setOnboarded + go('/').",
+    "Step 5 — lib/screens/home_screen.dart: StatefulWidget. In initState load shifts from storageService and load rules. Build ListView.builder over shifts with ShiftTile. AppBar actions: IconButton(Icons.settings) -> context.go('/rules'), FloatingActionButton or AppBar action with Icons.add -> context.push('/import').then((_) => _reload()). Empty state: centered Column with icon and text 'No shifts imported yet. Tap + to import a CSV.'",
+    "Step 6 — lib/screens/import_screen.dart: StatefulWidget with _parsedShifts list. 'Pick CSV File' button calls FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['csv'], withData: true). On result: decode bytes as utf8, call CsvParser.parseCsv(), setState with parsed shifts. Show preview ListView. 'Confirm & Schedule Alarms' button: load rules from storageService, call alarmService.scheduleAll(), call storageService.saveShifts(), Navigator.pop(), then show SnackBar via the home screen's ScaffoldMessenger (pass count back via pop result or use a global key).",
+    "Step 7 — lib/screens/rules_screen.dart: StatefulWidget. Load rules and nightBefore in initState. Show ListTile per non-off shift type with alarm time editable via showTimePicker. Show separate tile for night-before notification time. On each time change: update state and call storageService.saveRules(rules, nightBefore). AppBar back button returns to home."
+  ],
+  "acceptance_criteria": [
+    "flutter analyze reports 'No issues found!' on the entire project",
+    "lib/app.dart GoRouter correctly defines all four routes and the first-launch redirect",
+    "lib/screens/import_screen.dart: picking a CSV file triggers CSV parsing and shows a preview list",
+    "lib/screens/import_screen.dart: confirming import calls alarmService.scheduleAll() and shows a SnackBar with count",
+    "lib/screens/rules_screen.dart: each shift type alarm time is editable and persisted",
+    "lib/screens/home_screen.dart: displays imported shifts with ShiftTile and navigates to import and rules screens",
+    "lib/main.dart: initialises timezone data and AlarmService before runApp"
+  ],
+  "verification": [
+    "flutter analyze — 'No issues found!' (run from c:\\Users\\tlhol\\OneDrive\\Documents\\shift-reminders-1\\shifts_app)",
+    "flutter build apk --debug — exits 0 (confirms Android build succeeds end-to-end)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

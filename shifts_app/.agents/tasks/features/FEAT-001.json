@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Project scaffolding: add all dependencies to pubspec.yaml, update AndroidManifest.xml and Info.plist, and create all model and service layer files (lib/models/, lib/services/). This feature has no dependency on FEAT-002.",
+  "status": "completed",
+  "steps": [
+    "Step 1 — pubspec.yaml: Replace the dependencies block with the full list specified in plan.md item 1. Add 'timezone: ^0.9.0' explicitly (required by flutter_local_notifications zonedSchedule). Run 'flutter pub get' to resolve.",
+    "Step 2 — AndroidManifest.xml: Add the six <uses-permission> entries and the two flutter_local_notifications <receiver> entries inside <application> as specified in plan.md item 2. Add the SET_ALARM intent to the <queries> block.",
+    "Step 3 — Info.plist: Add NSUserNotificationUsageDescription and UIBackgroundModes keys as specified in plan.md item 3.",
+    "Step 4 — lib/models/shift.dart: Create the ShiftType enum with fromString factory (case-insensitive, WFH checked before plain early shift) and Shift class with fromCsvRow factory, toJson/fromJson, and isPast getter. Use intl DateFormat('dd-MMM-yy') to parse dates. Import: package:intl/intl.dart.",
+    "Step 5 — lib/models/shift_rule.dart: Create ShiftRule with alarmTime (TimeOfDay), shiftStart (TimeOfDay), type (ShiftType), displayName (String getter). Add static defaults list with all five shift types. Add nightBeforeDefault constant = TimeOfDay(hour:20,minute:0). Add toJson/fromJson.",
+    "Step 6 — lib/services/storage_service.dart: Create StorageService with saveShifts, loadShifts, saveRules, loadRules, loadNightBefore, isFirstLaunch, setOnboarded methods all using shared_preferences. Keys: 'shifts', 'rules', 'nightBefore', 'onboarded'.",
+    "Step 7 — lib/services/csv_parser.dart: Create CsvParser with static parseCsv(String) method using CsvToListConverter from the csv package. Wrap each row in try/catch to skip header and malformed rows.",
+    "Step 8 — lib/services/alarm_service.dart: Create AlarmService with init(), scheduleAll(), and countScheduled() methods. init() sets up FlutterLocalNotificationsPlugin. scheduleAll() cancels existing notifications then iterates shifts: for Android wake alarms use AndroidIntent with android.intent.action.SET_ALARM and SKIP_UI=true; for iOS and night-before on both platforms use plugin.zonedSchedule() with tz.TZDateTime. Use deterministic notification IDs: base = shift.date.millisecondsSinceEpoch ~/ 60000, nightBeforeId = base * 2, wakeId = base * 2 + 1. Import dart:io for Platform.isAndroid check."
+  ],
+  "acceptance_criteria": [
+    "flutter pub get exits 0 with no resolution errors",
+    "flutter analyze reports no issues on all files in lib/models/ and lib/services/",
+    "lib/models/shift.dart: ShiftType.fromString('Early Shift WFH') returns ShiftType.earlyShiftWFH; fromString('early shift') returns ShiftType.earlyShift",
+    "lib/services/csv_parser.dart: parseCsv correctly skips a header row and returns Shift objects for valid rows",
+    "AndroidManifest.xml contains SCHEDULE_EXACT_ALARM, USE_EXACT_ALARM, SET_ALARM, POST_NOTIFICATIONS permissions and the two flutter_local_notifications receivers",
+    "Info.plist contains NSUserNotificationUsageDescription key"
+  ],
+  "verification": [
+    "flutter pub get — exits 0, pubspec.lock updated",
+    "flutter analyze — 'No issues found!' (run from c:\\Users\\tlhol\\OneDrive\\Documents\\shift-reminders-1\\shifts_app)"
+  ],
+  "blocked_reason": null,
+  "findings": "flutter pub get resolved successfully — 41 dependencies added. Resolved versions: flutter_local_notifications 18.0.1, android_intent_plus 5.3.1, file_picker 8.3.7, csv 6.0.0, shared_preferences 2.5.6, permission_handler 11.4.0, intl 0.19.0, go_router 14.8.1, timezone 0.9.4. Note: timezone is NOT a transitive dep of flutter_local_notifications 18.0.1 — it must be declared explicitly in pubspec.yaml (confirmed by analyzing alarm_service.dart which imports it directly). zonedSchedule() in flutter_local_notifications 18 requires the uiLocalNotificationDateInterpretation named parameter (not documented in plan) — added UILocalNotificationDateInterpretation.absoluteTime to both calls. flutter analyze reports 'No issues found!' across all lib/models/ and lib/services/ files. Flutter found at C:\\Users\\tlhol\\Downloads\\flutter\\bin\\flutter.bat (not on PATH)."
+}
