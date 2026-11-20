@@ -35,4 +35,4 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "lib/assets/images/app_icon.png"
+  image_path: "lib/assets/images/RemindMe app logo (1).png"

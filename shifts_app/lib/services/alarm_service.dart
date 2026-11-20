@@ -5,14 +5,16 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import '../models/shift.dart';
 import '../models/shift_rule.dart';
+import '../models/manual_alarm.dart';
 
 class AlarmService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -54,8 +56,7 @@ class AlarmService {
         nightBefore.minute,
       );
       if (nightBeforeDateTime.isAfter(now)) {
-        final nightBeforeId =
-            (shift.date.millisecondsSinceEpoch ~/ 60000) * 2;
+        final nightBeforeId = (shift.date.millisecondsSinceEpoch ~/ 60000) * 2;
         await _plugin.zonedSchedule(
           nightBeforeId,
           'Shift Tomorrow',
@@ -65,8 +66,7 @@ class AlarmService {
             android: AndroidNotificationDetails(
               'shift_reminders_night',
               'Night Before Reminders',
-              channelDescription:
-                  'Notifications the night before a shift',
+              channelDescription: 'Notifications the night before a shift',
               importance: Importance.high,
               priority: Priority.high,
             ),
@@ -105,8 +105,7 @@ class AlarmService {
           );
           await intent.launch();
         } else {
-          final wakeId =
-              (shift.date.millisecondsSinceEpoch ~/ 60000) * 2 + 1;
+          final wakeId = (shift.date.millisecondsSinceEpoch ~/ 60000) * 2 + 1;
           await _plugin.zonedSchedule(
             wakeId,
             'Time to get up!',
@@ -135,9 +134,84 @@ class AlarmService {
   }
 
   Future<int> countScheduled(List<Shift> shifts) async {
-    return shifts
-        .where((s) => !s.isPast && s.type != ShiftType.off)
-        .length;
+    return shifts.where((s) => !s.isPast && s.type != ShiftType.off).length;
+  }
+
+  Future<void> scheduleManualAlarms(List<ManualAlarm> alarms) async {
+    for (var id = 80000; id < 80100; id++) {
+      await _plugin.cancel(id);
+    }
+
+    for (final alarm in alarms) {
+      if (!alarm.enabled) continue;
+
+      for (final weekday in alarm.weekdays) {
+        final scheduledDate = _nextWeekday(
+          weekday,
+          alarm.time.hour,
+          alarm.time.minute,
+        );
+        final id = 80000 + (alarm.id.hashCode.abs() % 100) * 7 + weekday;
+
+        await _plugin.zonedSchedule(
+          id,
+          alarm.label.isEmpty ? 'Alarm' : alarm.label,
+          'Scheduled for ${_formatWeekday(weekday)}',
+          scheduledDate,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              'manual_alarm_${alarm.toneId}',
+              'Manual Alarms',
+              channelDescription: 'User-created Monday to Sunday alarms',
+              importance: Importance.max,
+              priority: Priority.max,
+              sound: RawResourceAndroidNotificationSound(alarm.toneId),
+              enableVibration: true,
+              fullScreenIntent: true,
+              category: AndroidNotificationCategory.alarm,
+            ),
+            iOS: const DarwinNotificationDetails(
+              presentAlert: true,
+              presentSound: true,
+            ),
+          ),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      }
+    }
+  }
+
+  tz.TZDateTime _nextWeekday(int weekday, int hour, int minute) {
+    final now = tz.TZDateTime.now(tz.local);
+    var date = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+    while (date.weekday != weekday || !date.isAfter(now)) {
+      date = date.add(const Duration(days: 1));
+    }
+    return date;
+  }
+
+  String _formatWeekday(int weekday) {
+    const names = [
+      '',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    return names[weekday];
   }
 
   String _formatTime(TimeOfDay t) {

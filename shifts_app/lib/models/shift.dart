@@ -4,14 +4,18 @@ enum ShiftType {
   earlyShift,
   earlyShiftWFH,
   middleShift,
+  middleShiftWFH,
   lateShift,
+  lateShiftWFH,
   off;
 
   static ShiftType fromString(String s) {
     final lower = s.trim().toLowerCase();
     if (lower == 'early shift wfh') return ShiftType.earlyShiftWFH;
     if (lower == 'early shift') return ShiftType.earlyShift;
+    if (lower == 'middle shift wfh') return ShiftType.middleShiftWFH;
     if (lower == 'middle shift') return ShiftType.middleShift;
+    if (lower == 'late shift wfh') return ShiftType.lateShiftWFH;
     if (lower == 'late shift') return ShiftType.lateShift;
     if (lower == 'off') return ShiftType.off;
     throw ArgumentError('Unknown shift type: $s');
@@ -25,8 +29,12 @@ enum ShiftType {
         return 'Early Shift WFH';
       case ShiftType.middleShift:
         return 'Middle Shift';
+      case ShiftType.middleShiftWFH:
+        return 'Middle Shift WFH';
       case ShiftType.lateShift:
         return 'Late Shift';
+      case ShiftType.lateShiftWFH:
+        return 'Late Shift WFH';
       case ShiftType.off:
         return 'Off';
     }

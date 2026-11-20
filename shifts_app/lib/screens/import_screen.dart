@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:excel_community/excel_community.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../models/shift.dart';
@@ -186,10 +187,9 @@ class _ImportScreenState extends State<ImportScreen> {
       final nightBefore = await widget.storageService.loadNightBefore();
       await widget.alarmService.scheduleAll(_parsedShifts, rules, nightBefore);
       await widget.storageService.saveShifts(_parsedShifts);
-      final count = await widget.alarmService.countScheduled(_parsedShifts);
 
       if (mounted) {
-        Navigator.of(context).pop(count);
+        context.go('/');
       }
     } catch (e) {
       setState(() => _scheduling = false);
@@ -207,85 +207,126 @@ class _ImportScreenState extends State<ImportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Import Shifts')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ElevatedButton.icon(
-              icon: const Icon(Icons.upload_file),
-              label: const Text('Pick CSV or Excel File'),
-              onPressed: _scheduling ? null : _pickFile,
-            ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 16),
-            Text(
-              'Or import from a link',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _linkController,
-              enabled: !_scheduling && !_loadingLink,
-              keyboardType: TextInputType.url,
-              textInputAction: TextInputAction.go,
-              decoration: const InputDecoration(
-                labelText: 'Excel or CSV link',
-                hintText: 'https://example.com/shifts.xlsx',
-                border: OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _importFromLink(),
-            ),
-            const SizedBox(height: 8),
-            ElevatedButton.icon(
-              icon: _loadingLink
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.link),
-              label: const Text('Import from Link'),
-              onPressed: _scheduling || _loadingLink ? null : _importFromLink,
-            ),
-            if (_hasParsed) ...[
-              const SizedBox(height: 16),
-              Text(
-                '${_parsedShifts.length} shift(s) found',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _parsedShifts.length,
-                  itemBuilder: (context, index) {
-                    final shift = _parsedShifts[index];
-                    return ListTile(
-                      dense: true,
-                      leading: const Icon(Icons.schedule),
-                      title: Text(
-                        DateFormat('EEE d MMM yyyy').format(shift.date),
-                      ),
-                      subtitle: Text(shift.type.displayName),
-                    );
-                  },
+      appBar: AppBar(
+        leading: TextButton.icon(
+          onPressed: _scheduling ? null : () => context.go('/'),
+          icon: const Icon(Icons.arrow_back),
+          label: const Text('Back to alarms'),
+        ),
+        leadingWidth: 150,
+        title: const Text('Import Shifts'),
+      ),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Align(
+              alignment: _hasParsed ? Alignment.topCenter : Alignment.center,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: SizedBox(
+                  height: constraints.maxHeight,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 32,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: _hasParsed
+                          ? MainAxisAlignment.start
+                          : MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Import shifts from a CSV or Excel file, or from a link to a file.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Pick CSV or Excel File'),
+                          onPressed: _scheduling ? null : _pickFile,
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Or import from a link',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _linkController,
+                          enabled: !_scheduling && !_loadingLink,
+                          keyboardType: TextInputType.url,
+                          textInputAction: TextInputAction.go,
+                          decoration: const InputDecoration(
+                            labelText: 'Excel or CSV link',
+                            hintText: 'https://example.com/shifts.xlsx',
+                            border: OutlineInputBorder(),
+                          ),
+                          onSubmitted: (_) => _importFromLink(),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          icon: _loadingLink
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.link),
+                          label: const Text('Import from Link'),
+                          onPressed: _scheduling || _loadingLink
+                              ? null
+                              : _importFromLink,
+                        ),
+                        if (_hasParsed) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            '${_parsedShifts.length} shift(s) found',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: _parsedShifts.length,
+                              itemBuilder: (context, index) {
+                                final shift = _parsedShifts[index];
+                                return ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.schedule),
+                                  title: Text(
+                                    DateFormat(
+                                      'EEE d MMM yyyy',
+                                    ).format(shift.date),
+                                  ),
+                                  subtitle: Text(shift.type.displayName),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _scheduling ? null : _confirmAndSchedule,
+                            child: _scheduling
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('Confirm & Schedule Alarms'),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _scheduling ? null : _confirmAndSchedule,
-                child: _scheduling
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Confirm & Schedule Alarms'),
-              ),
-            ],
-          ],
+            );
+          },
         ),
       ),
     );

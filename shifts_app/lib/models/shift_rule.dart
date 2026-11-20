@@ -33,7 +33,17 @@ class ShiftRule {
       shiftStart: TimeOfDay(hour: 11, minute: 0),
     ),
     ShiftRule(
+      type: ShiftType.middleShiftWFH,
+      alarmTime: TimeOfDay(hour: 10, minute: 45),
+      shiftStart: TimeOfDay(hour: 11, minute: 0),
+    ),
+    ShiftRule(
       type: ShiftType.lateShift,
+      alarmTime: TimeOfDay(hour: 13, minute: 45),
+      shiftStart: TimeOfDay(hour: 14, minute: 0),
+    ),
+    ShiftRule(
+      type: ShiftType.lateShiftWFH,
       alarmTime: TimeOfDay(hour: 13, minute: 45),
       shiftStart: TimeOfDay(hour: 14, minute: 0),
     ),
