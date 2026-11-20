@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:excel_community/excel.dart';
+import 'package:excel_community/excel_community.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../models/shift.dart';
@@ -123,23 +123,52 @@ class _ImportScreenState extends State<ImportScreen> {
       for (final row in table.rows) {
         if (row.length < 3) continue;
         try {
-          final dateValue = row[1]?.value;
-          final dateText = dateValue is DateTime
-              ? DateFormat('dd-MMM-yy').format(dateValue)
-              : dateValue?.toString().trim() ?? '';
-          final typeText = row[2]?.value?.toString().trim() ?? '';
-          shifts.add(
-            Shift(
-              date: DateFormat('dd-MMM-yy').parse(dateText),
-              type: ShiftType.fromString(typeText),
-            ),
-          );
+          final date = _dateFromCell(row[1]?.value);
+          if (date == null) continue;
+          final typeText = _cellText(row[2]?.value);
+          shifts.add(Shift(date: date, type: ShiftType.fromString(typeText)));
         } catch (_) {
           // Skip header rows and malformed rows.
         }
       }
     }
     return shifts;
+  }
+
+  DateTime? _dateFromCell(CellValue? value) {
+    if (value is DateCellValue) {
+      return value.asDateTimeLocal();
+    }
+    if (value is DateTimeCellValue) {
+      return value.asDateTimeLocal();
+    }
+
+    final text = _cellText(value);
+    if (text.isEmpty) return null;
+
+    for (final pattern in const [
+      'dd-MMM-yy',
+      'dd-MMM-yyyy',
+      'yyyy-MM-dd',
+      'dd/MM/yyyy',
+      'd/M/yyyy',
+    ]) {
+      final date = DateFormat(pattern).tryParseStrict(text);
+      if (date != null) return date;
+    }
+
+    return DateTime.tryParse(text);
+  }
+
+  String _cellText(CellValue? value) {
+    if (value == null) return '';
+    if (value is TextCellValue) return value.value.text?.trim() ?? '';
+    if (value is IntCellValue) return value.value.toString();
+    if (value is DoubleCellValue) return value.value.toString();
+    if (value is FormulaCellValue) {
+      return _cellText(value.cachedValue);
+    }
+    return value.toString().trim();
   }
 
   void _setParsedShifts(List<Shift> shifts) {
@@ -157,8 +186,7 @@ class _ImportScreenState extends State<ImportScreen> {
       final nightBefore = await widget.storageService.loadNightBefore();
       await widget.alarmService.scheduleAll(_parsedShifts, rules, nightBefore);
       await widget.storageService.saveShifts(_parsedShifts);
-      final count =
-          await widget.alarmService.countScheduled(_parsedShifts);
+      final count = await widget.alarmService.countScheduled(_parsedShifts);
 
       if (mounted) {
         Navigator.of(context).pop(count);
@@ -171,9 +199,9 @@ class _ImportScreenState extends State<ImportScreen> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -238,7 +266,8 @@ class _ImportScreenState extends State<ImportScreen> {
                       dense: true,
                       leading: const Icon(Icons.schedule),
                       title: Text(
-                          DateFormat('EEE d MMM yyyy').format(shift.date)),
+                        DateFormat('EEE d MMM yyyy').format(shift.date),
+                      ),
                       subtitle: Text(shift.type.displayName),
                     );
                   },
