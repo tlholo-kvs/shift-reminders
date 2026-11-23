@@ -138,7 +138,7 @@ class AlarmService {
   }
 
   Future<void> scheduleManualAlarms(List<ManualAlarm> alarms) async {
-    for (var id = 80000; id < 80100; id++) {
+    for (var id = 80000; id < 90000; id++) {
       await _plugin.cancel(id);
     }
 
@@ -146,6 +146,27 @@ class AlarmService {
       if (!alarm.enabled) continue;
 
       for (final weekday in alarm.weekdays) {
+        if (Platform.isAndroid) {
+          final intent = AndroidIntent(
+            action: 'android.intent.action.SET_ALARM',
+            arguments: <String, dynamic>{
+              'android.intent.extra.alarm.HOUR': alarm.time.hour,
+              'android.intent.extra.alarm.MINUTES': alarm.time.minute,
+              'android.intent.extra.alarm.DAYS': <int>[
+                weekday == 7 ? 1 : weekday + 1,
+              ],
+              'android.intent.extra.alarm.MESSAGE':
+                  alarm.label.isEmpty ? 'Alarm' : alarm.label,
+              'android.intent.extra.alarm.SKIP_UI': true,
+              'android.intent.extra.alarm.VIBRATE': true,
+              'android.intent.extra.alarm.RINGTONE':
+                  'android.resource://com.example.shifts_app/raw/${alarm.toneId}',
+            },
+          );
+          await intent.launch();
+          continue;
+        }
+
         final scheduledDate = _nextWeekday(
           weekday,
           alarm.time.hour,
