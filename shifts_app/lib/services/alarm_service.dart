@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import '../models/shift.dart';
@@ -10,6 +11,18 @@ import '../models/manual_alarm.dart';
 class AlarmService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+  static const MethodChannel _timezoneChannel = MethodChannel(
+    'com.example.shifts_app/timezone',
+  );
+
+  Future<void> _clearScheduledNotificationCache() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _timezoneChannel.invokeMethod<void>(
+        'clearScheduledNotifications',
+      );
+    } catch (_) {}
+  }
 
   Future<void> init() async {
     const androidSettings = AndroidInitializationSettings(
@@ -25,6 +38,7 @@ class AlarmService {
       iOS: iosSettings,
     );
     await _plugin.initialize(settings);
+    await _clearScheduledNotificationCache();
   }
 
   Future<void> scheduleAll(
@@ -32,6 +46,7 @@ class AlarmService {
     List<ShiftRule> rules,
     TimeOfDay nightBefore,
   ) async {
+    await _clearScheduledNotificationCache();
     await _plugin.cancelAll();
 
     for (final shift in shifts) {
@@ -138,8 +153,10 @@ class AlarmService {
   }
 
   Future<void> scheduleManualAlarms(List<ManualAlarm> alarms) async {
-    for (var id = 80000; id < 90000; id++) {
-      await _plugin.cancel(id);
+    if (!Platform.isAndroid) {
+      for (var id = 80000; id < 90000; id++) {
+        await _plugin.cancel(id);
+      }
     }
 
     for (final alarm in alarms) {
