@@ -73,32 +73,122 @@ class _ImportScreenState extends State<ImportScreen> {
         throw const FormatException('Invalid web link');
       }
 
-      final response = await http.get(_excelExportUri(uri));
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw Exception('Download failed (${response.statusCode})');
+      Object? lastError;
+      http.Response? response;
+      for (final candidate in _downloadCandidates(uri)) {
+        try {
+          final candidateResponse = await http.get(candidate);
+          if (candidateResponse.statusCode >= 200 &&
+              candidateResponse.statusCode < 300 &&
+              candidateResponse.bodyBytes.isNotEmpty) {
+            response = candidateResponse;
+            break;
+          }
+          lastError =
+              'Download failed (${candidateResponse.statusCode})';
+        } catch (e) {
+          lastError = e;
+        }
+      }
+      if (response == null) {
+        throw Exception(lastError ?? 'Download failed');
       }
 
-      final fileName = uri.path.toLowerCase();
+      final contentDisposition =
+          response.headers['content-disposition']?.toLowerCase() ?? '';
+      final contentType =
+          response.headers['content-type']?.toLowerCase() ?? '';
+      final fileName = contentDisposition.contains('.xlsx')
+          ? 'alarms.xlsx'
+          : contentDisposition.contains('.xls')
+          ? 'alarms.xls'
+          : contentDisposition.contains('.csv')
+          ? 'alarms.csv'
+          : contentType.contains('spreadsheet') ||
+                contentType.contains('excel') ||
+                contentType.contains('officedocument')
+          ? 'alarms.xlsx'
+          : uri.path.toLowerCase();
       final shifts = _parseBytes(response.bodyBytes, fileName);
       _setParsedShifts(shifts);
+      if (shifts.isEmpty) {
+        throw Exception(
+          'No shifts found. Check that the link is downloadable and the file has Date and Shift columns.',
+        );
+      }
     } catch (e) {
-      _showError('Could not download or parse the link');
+      final message = e.toString().replaceFirst('Exception: ', '');
+      _showError(message);
     } finally {
       if (mounted) setState(() => _loadingLink = false);
     }
   }
 
-  Uri _excelExportUri(Uri uri) {
+  List<Uri> _downloadCandidates(Uri uri) {
     if (uri.host == 'docs.google.com' &&
         uri.path.contains('/spreadsheets/d/')) {
       final idMatch = RegExp(r'/spreadsheets/d/([^/]+)').firstMatch(uri.path);
       if (idMatch != null) {
-        return Uri.parse(
-          'https://docs.google.com/spreadsheets/d/${idMatch.group(1)}/export?format=xlsx',
-        );
+        return [
+          Uri.parse(
+            'https://docs.google.com/spreadsheets/d/${idMatch.group(1)}/export?format=xlsx',
+          ),
+          uri,
+        ];
       }
     }
-    return uri;
+
+    if (uri.host.endsWith('sharepoint.com')) {
+      final candidates = <Uri>[];
+      final layoutIndex = uri.path.indexOf('/_layouts/15/Doc.aspx');
+      if (layoutIndex > 0) {
+        final directPath = uri.path.substring(0, layoutIndex);
+        candidates.add(
+          Uri(
+            scheme: uri.scheme,
+            host: uri.host,
+            path: directPath,
+            queryParameters: const {'download': '1'},
+          ),
+        );
+
+        final fileName = uri.queryParameters['file'];
+        final personalIndex = uri.path.indexOf('/personal/');
+        if (personalIndex >= 0 && fileName != null) {
+          final personalPath =
+              uri.path.substring(personalIndex, layoutIndex);
+          for (final folder in ['Documents', 'Shared Documents']) {
+            final sourceUrl =
+                '${uri.scheme}://${uri.host}$personalPath/$folder/${Uri.decodeComponent(fileName)}';
+            candidates.add(
+              Uri(
+                scheme: uri.scheme,
+                host: uri.host,
+                path: '$personalPath/_layouts/15/download.aspx',
+                queryParameters: {'SourceUrl': sourceUrl},
+              ),
+            );
+          }
+        }
+      }
+      candidates.add(Uri.parse('${uri.toString()}&download=1'));
+      candidates.add(uri);
+      return candidates;
+    }
+
+    final candidates = <Uri>[uri];
+    if (!uri.queryParameters.containsKey('download')) {
+      candidates.insert(
+        0,
+        Uri(
+          scheme: uri.scheme,
+          host: uri.host,
+          path: uri.path,
+          queryParameters: {...uri.queryParameters, 'download': '1'},
+        ),
+      );
+    }
+    return candidates;
   }
 
   List<Shift> _parseBytes(List<int> bytes, String fileName) {

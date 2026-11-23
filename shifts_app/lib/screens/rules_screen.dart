@@ -93,7 +93,27 @@ class _RulesScreenState extends State<RulesScreen> {
     await widget.alarmService.scheduleManualAlarms(_manualAlarms);
   }
 
-  Future<void> _editManualAlarm([ManualAlarm? alarm]) async {
+  Future<void> _openShiftAlarm(ShiftRule rule) async {
+    final existing = _manualAlarms.where(
+      (alarm) => alarm.id == 'shift_${rule.type.name}',
+    );
+    final alarm = existing.isEmpty
+        ? ManualAlarm(
+            id: 'shift_${rule.type.name}',
+            label: rule.displayName,
+            time: rule.alarmTime,
+            weekdays: const {1, 2, 3, 4, 5, 6, 7},
+            toneId: _alarmToneId,
+          )
+        : existing.first;
+
+    await _editManualAlarm(alarm, true);
+  }
+
+  Future<void> _editManualAlarm([
+    ManualAlarm? alarm,
+    bool returnToAlarms = false,
+  ]) async {
     var label = alarm?.label ?? 'Weekday alarm';
     var time = alarm?.time ?? const TimeOfDay(hour: 7, minute: 0);
     var weekdays = Set<int>.from(
@@ -335,6 +355,9 @@ class _RulesScreenState extends State<RulesScreen> {
       }
     });
     await _saveManualAlarms();
+    if (returnToAlarms && mounted) {
+      context.go('/');
+    }
   }
 
   @override
@@ -379,6 +402,7 @@ class _RulesScreenState extends State<RulesScreen> {
                     .map((e) {
                       final rule = e.value;
                       return ListTile(
+                        onTap: () => _openShiftAlarm(rule),
                         title: Text(rule.displayName),
                         subtitle: Text(
                           'Alarm at ${_formatTime(rule.alarmTime)} — shift starts ${_formatTime(rule.shiftStart)}',
@@ -386,7 +410,7 @@ class _RulesScreenState extends State<RulesScreen> {
                         trailing: IconButton(
                           icon: const Icon(Icons.edit),
                           tooltip: 'Edit alarm time',
-                          onPressed: () => _editAlarmTime(e.key),
+                          onPressed: () => _openShiftAlarm(rule),
                         ),
                       );
                     }),
@@ -410,6 +434,7 @@ class _RulesScreenState extends State<RulesScreen> {
                     .map((e) {
                       final rule = e.value;
                       return ListTile(
+                        onTap: () => _openShiftAlarm(rule),
                         title: Text(rule.displayName),
                         subtitle: Text(
                           'Alarm at ${_formatTime(rule.alarmTime)} — shift starts ${_formatTime(rule.shiftStart)}',
@@ -417,7 +442,7 @@ class _RulesScreenState extends State<RulesScreen> {
                         trailing: IconButton(
                           icon: const Icon(Icons.edit),
                           tooltip: 'Edit WFH alarm time',
-                          onPressed: () => _editAlarmTime(e.key),
+                          onPressed: () => _openShiftAlarm(rule),
                         ),
                       );
                     }),
