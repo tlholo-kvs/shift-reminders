@@ -108,7 +108,32 @@ class _RulesScreenState extends State<RulesScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(alarm == null ? 'Add alarm' : 'Edit alarm'),
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              backgroundColor: const Color(0xFF171F36),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              title: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    icon: const Icon(Icons.arrow_back),
+                  ),
+                  Expanded(
+                    child: Text(
+                      alarm == null ? 'Add Alarm' : 'Alarm Details',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                ],
+              ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -122,8 +147,9 @@ class _RulesScreenState extends State<RulesScreen> {
                       onChanged: (value) => label = value,
                     ),
                     const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: () async {
+                    InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () async {
                         final picked = await showTimePicker(
                           context: context,
                           initialTime: time,
@@ -132,8 +158,87 @@ class _RulesScreenState extends State<RulesScreen> {
                           setDialogState(() => time = picked);
                         }
                       },
-                      icon: const Icon(Icons.schedule),
-                      label: Text(_formatTime(time)),
+                      child: Container(
+                        height: 82,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0B1020),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              time.hourOfPeriod == 0
+                                  ? '12'
+                                  : time.hourOfPeriod.toString().padLeft(2, '0'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 38,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8),
+                              child: Text(
+                                ':',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 38,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              time.minute.toString().padLeft(2, '0'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 38,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: time.hour < 12
+                                        ? const Color(0xFF7867F6)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: const Text(
+                                    'AM',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'PM',
+                                  style: TextStyle(
+                                    color: time.hour >= 12
+                                        ? const Color(0xFF7867F6)
+                                        : Colors.white54,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Wrap(
@@ -236,13 +341,17 @@ class _RulesScreenState extends State<RulesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0B1020),
         leading: TextButton.icon(
           onPressed: () => context.go('/'),
           icon: const Icon(Icons.arrow_back),
-          label: const Text('Back to alarms'),
+          label: const Text(''),
         ),
-        leadingWidth: 150,
-        title: const Text('Alarm Rules'),
+        leadingWidth: 56,
+        title: const Text(
+          'Settings',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

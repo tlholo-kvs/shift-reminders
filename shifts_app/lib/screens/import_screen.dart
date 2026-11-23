@@ -207,14 +207,19 @@ class _ImportScreenState extends State<ImportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0B1020),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0B1020),
         leading: TextButton.icon(
           onPressed: _scheduling ? null : () => context.go('/'),
           icon: const Icon(Icons.arrow_back),
-          label: const Text('Back to alarms'),
+          label: const Text(''),
         ),
-        leadingWidth: 150,
-        title: const Text('Import Shifts'),
+        leadingWidth: 56,
+        title: const Text(
+          'Import Alarms',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -236,21 +241,114 @@ class _ImportScreenState extends State<ImportScreen> {
                           : MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          'Import shifts from a CSV or Excel file, or from a link to a file.',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.upload_file),
-                          label: const Text('Pick CSV or Excel File'),
-                          onPressed: _scheduling ? null : _pickFile,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 28,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF171F36),
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: 58,
+                                    height: 58,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE8EEF8),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Text(
+                                      'XLS',
+                                      style: TextStyle(
+                                        color: Color(0xFF15A36A),
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 12),
+                                    child: Icon(
+                                      Icons.sync_alt,
+                                      color: Color(0xFF7867F6),
+                                      size: 34,
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 58,
+                                    height: 58,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF7867F6),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(
+                                      Icons.schedule,
+                                      color: Colors.white,
+                                      size: 30,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Import from File',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Upload a CSV or Excel file containing your alarms',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white60,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 48,
+                                child: FilledButton.icon(
+                                  icon: const Icon(Icons.cloud_upload_outlined),
+                                  label: const Text(
+                                    'Choose File',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w800),
+                                  ),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor:
+                                        const Color(0xFF7867F6),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  onPressed:
+                                      _scheduling ? null : _pickFile,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        const Divider(),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Or import from a link',
-                          style: Theme.of(context).textTheme.titleMedium,
+                        const SizedBox(height: 18),
+                        const Center(
+                          child: Text(
+                            'or',
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 8),
                         TextField(
@@ -266,7 +364,7 @@ class _ImportScreenState extends State<ImportScreen> {
                           onSubmitted: (_) => _importFromLink(),
                         ),
                         const SizedBox(height: 8),
-                        ElevatedButton.icon(
+                        OutlinedButton.icon(
                           icon: _loadingLink
                               ? const SizedBox(
                                   height: 18,
@@ -276,7 +374,20 @@ class _ImportScreenState extends State<ImportScreen> {
                                   ),
                                 )
                               : const Icon(Icons.link),
-                          label: const Text('Import from Link'),
+                          label: const Text(
+                            'Import from Excel Link',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF7867F6),
+                            side: const BorderSide(
+                              color: Color(0xFF7867F6),
+                            ),
+                            minimumSize: const Size.fromHeight(48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
                           onPressed: _scheduling || _loadingLink
                               ? null
                               : _importFromLink,
@@ -307,8 +418,15 @@ class _ImportScreenState extends State<ImportScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          ElevatedButton(
+                          FilledButton(
                             onPressed: _scheduling ? null : _confirmAndSchedule,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFF7867F6),
+                              minimumSize: const Size.fromHeight(48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
                             child: _scheduling
                                 ? const SizedBox(
                                     height: 20,

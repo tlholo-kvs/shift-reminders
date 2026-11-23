@@ -16,8 +16,8 @@ class ShiftTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const surface = Color(0xFF26365E);
-    const accent = Color(0xFFEAFB67);
+    const surface = Color(0xFF1B2749);
+    const accent = Color(0xFF7867F6);
 
     final isPast = shift.isPast;
     final enabled = !isPast && shift.type != ShiftType.off && rule != null;
@@ -31,98 +31,74 @@ class ShiftTile extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: enabled ? surface : const Color(0xFF34405A),
+        color: enabled ? surface : const Color(0xFF12192B),
         borderRadius: BorderRadius.circular(18),
-        boxShadow: enabled
-            ? const [
-                BoxShadow(
-                  color: Color(0x22000000),
-                  blurRadius: 10,
-                  offset: Offset(0, 6),
-                ),
-              ]
-            : null,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    rule?.displayName ?? shift.type.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                Switch(
-                  value: enabled,
-                  activeThumbColor: accent,
-                  activeTrackColor: accent.withValues(alpha: 0.35),
-                  inactiveThumbColor: Colors.white,
-                  inactiveTrackColor: const Color(0xFF667085),
-                  onChanged: null,
-                ),
-              ],
-            ),
-            const Spacer(),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 64,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   alarmTime,
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 27,
-                    height: 1,
+                    color: enabled ? Colors.white : Colors.white54,
+                    fontSize: 25,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -1,
+                    height: 1,
                   ),
                 ),
                 if (period.isNotEmpty) ...[
-                  const SizedBox(width: 5),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: Text(
-                      period,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
+                  const SizedBox(height: 4),
+                  Text(period,
+                      style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700)),
                 ],
               ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              '$dateName  $dateNumber',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.8,
-              ),
+          ),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  rule?.displayName ?? shift.type.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '$dateName  $dateNumber',
+                  style: TextStyle(
+                    color: enabled ? accent : Colors.white38,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              isPast ? 'Past' : 'Scheduled',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+          ),
+          Switch(
+            value: enabled,
+            activeThumbColor: Colors.white,
+            activeTrackColor: accent,
+            inactiveThumbColor: Colors.white,
+            inactiveTrackColor: const Color(0xFF667085),
+            onChanged: null,
+          ),
+        ],
       ),
     );
   }

@@ -23,8 +23,14 @@ class HomeScreen extends StatefulWidget {
 
 class _ManualAlarmCard extends StatelessWidget {
   final ManualAlarm alarm;
+  final VoidCallback onTap;
+  final ValueChanged<bool> onChanged;
 
-  const _ManualAlarmCard({required this.alarm});
+  const _ManualAlarmCard({
+    required this.alarm,
+    required this.onTap,
+    required this.onChanged,
+  });
 
   String _formatTime(TimeOfDay time) {
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
@@ -33,8 +39,8 @@ class _ManualAlarmCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const surface = Color(0xFF26365E);
-    const accent = Color(0xFFEAFB67);
+    const surface = Color(0xFF1B2749);
+    const accent = Color(0xFF7867F6);
     final period = alarm.time.hour >= 12 ? 'PM' : 'AM';
     final days = alarm.weekdays
         .map(
@@ -43,85 +49,80 @@ class _ManualAlarmCard extends StatelessWidget {
         )
         .join(', ');
 
-    return Container(
-      decoration: BoxDecoration(
-        color: alarm.enabled ? surface : const Color(0xFF34405A),
+    return Material(
+      color: alarm.enabled ? surface : const Color(0xFF12192B),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: alarm.enabled
-            ? const [
-                BoxShadow(
-                  color: Color(0x22000000),
-                  blurRadius: 10,
-                  offset: Offset(0, 6),
-                ),
-              ]
-            : null,
-      ),
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
             children: [
+              SizedBox(
+                width: 64,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _formatTime(alarm.time),
+                      style: TextStyle(
+                        color: alarm.enabled ? Colors.white : Colors.white54,
+                        fontSize: 25,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(period,
+                        style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
               Expanded(
-                child: Text(
-                  alarm.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      alarm.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      days,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: alarm.enabled ? accent : Colors.white38,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Switch(
                 value: alarm.enabled,
-                activeThumbColor: accent,
-                activeTrackColor: accent.withValues(alpha: 0.35),
-                onChanged: null,
+                activeThumbColor: Colors.white,
+                activeTrackColor: accent,
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: const Color(0xFFB90F2D),
+                onChanged: onChanged,
               ),
             ],
           ),
-          const Spacer(),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _formatTime(alarm.time),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 27,
-                  height: 1,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -1,
-                ),
-              ),
-              const SizedBox(width: 5),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Text(
-                  period,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            days,
-            style: const TextStyle(
-              color: accent,
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -165,20 +166,89 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _saveManualAlarms() async {
+    await widget.storageService.saveManualAlarms(_manualAlarms);
+    await widget.alarmService.scheduleManualAlarms(_manualAlarms);
+  }
+
+  ({String title, String time}) _nextAlarm() {
+    final now = DateTime.now();
+    DateTime? next;
+    String label = 'No upcoming alarm';
+
+    for (final alarm in _manualAlarms.where((alarm) => alarm.enabled)) {
+      for (final weekday in alarm.weekdays) {
+        var candidate = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          alarm.time.hour,
+          alarm.time.minute,
+        );
+        while (candidate.weekday != weekday || !candidate.isAfter(now)) {
+          candidate = candidate.add(const Duration(days: 1));
+        }
+        if (next == null || candidate.isBefore(next)) {
+          next = candidate;
+          label = alarm.label;
+        }
+      }
+    }
+
+    for (final shift in _visibleShifts) {
+      final rule = _ruleFor(shift);
+      if (rule == null) continue;
+      final candidate = DateTime(
+        shift.date.year,
+        shift.date.month,
+        shift.date.day,
+        rule.alarmTime.hour,
+        rule.alarmTime.minute,
+      );
+      if (candidate.isAfter(now) && (next == null || candidate.isBefore(next))) {
+        next = candidate;
+        label = rule.displayName;
+      }
+    }
+
+    if (next == null) return (title: label, time: '--:--');
+    final hour = next.hour == 0
+        ? 12
+        : (next.hour > 12 ? next.hour - 12 : next.hour);
+    final period = next.hour >= 12 ? 'PM' : 'AM';
+    final time = '$hour:${next.minute.toString().padLeft(2, '0')} $period';
+    final today = DateTime(now.year, now.month, now.day);
+    final candidateDay = DateTime(next.year, next.month, next.day);
+    final dayLabel = candidateDay == today
+        ? 'Today'
+        : candidateDay.difference(today).inDays == 1
+        ? 'Tomorrow'
+        : '${next.day}/${next.month}';
+    return (title: '$dayLabel • $time', time: label);
+  }
+
   @override
   Widget build(BuildContext context) {
     const navy = Color(0xFF171F36);
-    const accent = Color(0xFFEAFB67);
+    const canvas = Color(0xFF0B1020);
+    const surface = Color(0xFF1B2749);
+    const purple = Color(0xFF7867F6);
+    final nextAlarm = _nextAlarm();
 
     return Scaffold(
+      backgroundColor: canvas,
       appBar: AppBar(
+        backgroundColor: canvas,
         title: const Text(
-          'Alarms',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          'Alarm Manager',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings_outlined),
             tooltip: 'Alarm Rules',
             onPressed: () => context.go('/rules'),
           ),
@@ -186,104 +256,208 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _visibleShifts.isEmpty && _manualAlarms.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 112,
-                    height: 112,
-                    decoration: BoxDecoration(
-                      color: accent,
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x24000000),
-                          blurRadius: 24,
-                          offset: Offset(0, 12),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.alarm, size: 52, color: navy),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'No alarms yet',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'No shifts imported yet.\nTap + to import a CSV.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : GridView.builder(
+          : ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.92,
-              ),
-              itemCount: _manualAlarms.length + _visibleShifts.length,
-              itemBuilder: (context, index) {
-                if (index < _manualAlarms.length) {
-                  return _ManualAlarmCard(alarm: _manualAlarms[index]);
-                }
-                final shiftIndex = index - _manualAlarms.length;
-                final shift = _visibleShifts[shiftIndex];
-                return ShiftTile(shift: shift, rule: _ruleFor(shift));
-              },
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: surface,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: navy,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.access_alarm_rounded,
+                          color: purple,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Next Alarm',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              nextAlarm.title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              nextAlarm.time,
+                              style: const TextStyle(
+                                color: Colors.white60,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Colors.white38),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                if (_manualAlarms.isEmpty && _visibleShifts.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 80),
+                    child: Center(
+                      child: Text(
+                        'No alarms yet',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  )
+                else ...[
+                  for (var i = 0; i < _manualAlarms.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: SizedBox(
+                        height: 72,
+                        child: _ManualAlarmCard(
+                          alarm: _manualAlarms[i],
+                          onTap: () => context.go('/rules'),
+                          onChanged: (enabled) async {
+                            setState(() {
+                              _manualAlarms[i] =
+                                  _manualAlarms[i].copyWith(enabled: enabled);
+                            });
+                            await _saveManualAlarms();
+                          },
+                        ),
+                      ),
+                    ),
+                  for (final shift in _visibleShifts)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: SizedBox(
+                        height: 72,
+                        child: ShiftTile(
+                          shift: shift,
+                          rule: _ruleFor(shift),
+                        ),
+                      ),
+                    ),
+                ],
+              ],
             ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
-          height: 76,
+          height: 88,
           decoration: const BoxDecoration(
-            color: navy,
-            border: Border(top: BorderSide(color: Color(0xFF26365E))),
+            color: Color(0xFF171F36),
+            border: Border(
+              top: BorderSide(color: Color(0xFF26365E)),
+            ),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              IconButton(
-                tooltip: 'Alarms',
-                onPressed: () {},
-                icon: const Icon(Icons.alarm, color: accent),
+              Expanded(
+                child: TextButton(
+                  onPressed: () {},
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.alarm, color: purple, size: 22),
+                      SizedBox(height: 4),
+                      Text(
+                        'Alarms',
+                        style: TextStyle(
+                          color: purple,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              Material(
-                color: accent,
-                shape: const CircleBorder(),
-                elevation: 4,
-                child: Tooltip(
-                  message: 'Import shifts',
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: () =>
-                        context.push('/import').then((_) => _loadData()),
-                    child: const SizedBox(
-                      width: 56,
-                      height: 56,
-                      child: Icon(Icons.add, size: 30, color: navy),
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  child: FilledButton.icon(
+                    onPressed: () => context.go('/rules'),
+                    icon: const Icon(Icons.add, size: 20),
+                    label: const Text(
+                      'Add Alarm',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: purple,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
               ),
-              IconButton(
-                tooltip: 'Alarm rules',
-                onPressed: () => context.go('/rules'),
-                icon: const Icon(Icons.tune, color: Colors.white),
+              Expanded(
+                child: TextButton(
+                  onPressed: () =>
+                      context.push('/import').then((_) => _loadData()),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.file_upload_outlined,
+                          color: Colors.white60, size: 22),
+                      SizedBox(height: 4),
+                      Text(
+                        'Import',
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextButton(
+                  onPressed: () => context.go('/rules'),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.settings_outlined,
+                          color: Colors.white60, size: 22),
+                      SizedBox(height: 4),
+                      Text(
+                        'Settings',
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

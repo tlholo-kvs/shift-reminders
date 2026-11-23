@@ -56,12 +56,10 @@ class ShiftRemindersApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const brandGreen = Color(0xFF56856E);
-    const darkGreen = Color(0xFF285640);
-    const paleGreen = Color(0xFFB6CCC1);
+    const brandPurple = Color(0xFF7867F6);
     const alarmNavy = Color(0xFF171F36);
-    const alarmAccent = Color(0xFFEAFB67);
-    const alarmCanvas = Color(0xFF121A2C);
+    const alarmCanvas = Color(0xFF0B1020);
+    const cardSurface = Color(0xFF1B2749);
 
     return MaterialApp.router(
       title: 'Shift Reminders',
@@ -94,9 +92,9 @@ class ShiftRemindersApp extends StatelessWidget {
           brightness: Brightness.dark,
           primary: alarmNavy,
           onPrimary: Colors.white,
-          secondary: alarmAccent,
+          secondary: brandPurple,
           onSecondary: alarmNavy,
-          tertiary: paleGreen,
+          tertiary: cardSurface,
           onTertiary: Colors.white,
           error: Color(0xFFBA1A1A),
           onError: Colors.white,
@@ -113,21 +111,21 @@ class ShiftRemindersApp extends StatelessWidget {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: brandGreen,
+            backgroundColor: brandPurple,
             foregroundColor: Colors.white,
           ),
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-            backgroundColor: brandGreen,
+            backgroundColor: brandPurple,
             foregroundColor: Colors.white,
           ),
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: brandGreen,
+          backgroundColor: brandPurple,
           foregroundColor: Colors.white,
         ),
-        dividerColor: darkGreen,
+        dividerColor: cardSurface,
         iconTheme: const IconThemeData(color: Colors.white),
         listTileTheme: const ListTileThemeData(
           textColor: Colors.white,
@@ -136,16 +134,16 @@ class ShiftRemindersApp extends StatelessWidget {
         inputDecorationTheme: const InputDecorationTheme(
           labelStyle: TextStyle(color: Colors.white),
           hintStyle: TextStyle(color: Colors.white70),
-          border: OutlineInputBorder(borderSide: BorderSide(color: paleGreen)),
+          border: OutlineInputBorder(borderSide: BorderSide(color: cardSurface)),
           enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: paleGreen),
+            borderSide: BorderSide(color: cardSurface),
           ),
           focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: alarmAccent, width: 2),
+            borderSide: BorderSide(color: brandPurple, width: 2),
           ),
         ),
         progressIndicatorTheme: const ProgressIndicatorThemeData(
-          color: brandGreen,
+          color: brandPurple,
         ),
       ),
     );
