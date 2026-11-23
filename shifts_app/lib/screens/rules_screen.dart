@@ -53,22 +53,6 @@ class _RulesScreenState extends State<RulesScreen> {
     return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _editAlarmTime(int ruleIndex) async {
-    final current = _rules[ruleIndex].alarmTime;
-    final picked = await showTimePicker(context: context, initialTime: current);
-    if (picked == null) return;
-
-    final updated = ShiftRule(
-      type: _rules[ruleIndex].type,
-      alarmTime: picked,
-      shiftStart: _rules[ruleIndex].shiftStart,
-    );
-    setState(() {
-      _rules[ruleIndex] = updated;
-    });
-    await widget.storageService.saveRules(_rules, _nightBefore);
-  }
-
   Future<void> _editNightBefore() async {
     final picked = await showTimePicker(
       context: context,
