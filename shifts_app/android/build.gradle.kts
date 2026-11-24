@@ -5,10 +5,13 @@ allprojects {
     }
 }
 
-val newBuildDir: Directory =
-    rootProject.layout.buildDirectory
-        .dir("../../build")
-        .get()
+val localAppData = System.getenv("LOCALAPPDATA")
+val buildCacheRoot = if (localAppData != null) {
+    rootProject.layout.projectDirectory.dir("$localAppData/flutter-build/shift-reminders")
+} else {
+    rootProject.layout.projectDirectory.dir("../../build")
+}
+val newBuildDir: Directory = buildCacheRoot
 rootProject.layout.buildDirectory.value(newBuildDir)
 
 subprojects {
