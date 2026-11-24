@@ -23,8 +23,7 @@ class ShiftTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const surface = Color(0xFF1B2749);
-    const accent = Color(0xFF7867F6);
+    final colors = Theme.of(context).colorScheme;
 
     final isPast = shift.isPast;
     final enabled = !isPast && shift.type != ShiftType.off && rule != null;
@@ -36,7 +35,7 @@ class ShiftTile extends StatelessWidget {
     final dateNumber = DateFormat('d MMM').format(shift.date);
 
     return Material(
-      color: enabled ? surface : const Color(0xFF12192B),
+      color: enabled ? colors.surface : colors.surfaceContainer,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
@@ -47,7 +46,7 @@ class ShiftTile extends StatelessWidget {
           child: Row(
             children: [
               SizedBox(
-                width: 64,
+                width: 82,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,7 +57,9 @@ class ShiftTile extends StatelessWidget {
                       child: Text(
                         alarmTime,
                         style: TextStyle(
-                          color: enabled ? Colors.white : Colors.white54,
+                          color: enabled
+                              ? colors.onSurface
+                              : colors.onSurfaceVariant,
                           fontSize: 25,
                           fontWeight: FontWeight.w800,
                           height: 1,
@@ -77,8 +78,8 @@ class ShiftTile extends StatelessWidget {
                       rule?.displayName ?? shift.type.displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colors.onSurface,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -87,7 +88,9 @@ class ShiftTile extends StatelessWidget {
                     Text(
                       '$dateName  $dateNumber',
                       style: TextStyle(
-                        color: enabled ? accent : Colors.white38,
+                        color: enabled
+                            ? colors.primary
+                            : colors.onSurfaceVariant,
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                       ),
@@ -95,7 +98,10 @@ class ShiftTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colors.onSurfaceVariant,
+              ),
             ],
           ),
         ),

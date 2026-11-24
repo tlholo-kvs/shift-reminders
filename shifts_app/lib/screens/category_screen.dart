@@ -95,15 +95,16 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const canvas = Color(0xFF0B1020);
-    const surface = Color(0xFF1B2749);
-    const purple = Color(0xFF7867F6);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final canvas = theme.scaffoldBackgroundColor;
+    final surface = colors.surface;
+    final accent = colors.primary;
 
     return Scaffold(
       backgroundColor: canvas,
       appBar: AppBar(
         backgroundColor: canvas,
-        foregroundColor: Colors.white,
         leading: IconButton(
           tooltip: 'Back',
           icon: const Icon(Icons.arrow_back_rounded),
@@ -144,7 +145,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  color: purple.withValues(alpha: 0.18),
+                                  color: accent.withValues(alpha: 0.18),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: Icon(
@@ -155,23 +156,23 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                       : category == 'middle'
                                       ? Icons.light_mode_outlined
                                       : Icons.nights_stay_outlined,
-                                  color: purple,
+                                  color: accent,
                                 ),
                               ),
                               const SizedBox(width: 14),
                               Expanded(
                                 child: Text(
                                   '${category[0].toUpperCase()}${category.substring(1)} alarms',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: colors.onSurface,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
                               ),
-                              const Icon(
+                              Icon(
                                 Icons.chevron_right_rounded,
-                                color: Colors.white38,
+                                color: colors.onSurfaceVariant,
                               ),
                             ],
                           ),
@@ -199,7 +200,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                               decoration: BoxDecoration(
                                 color: alarm.enabled
                                     ? surface
-                                    : const Color(0xFF12192B),
+                                    : colors.surfaceContainer,
                                 borderRadius: BorderRadius.circular(18),
                               ),
                               padding: const EdgeInsets.symmetric(
@@ -208,7 +209,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                               child: Row(
                                 children: [
                                   SizedBox(
-                                    width: 64,
+                                    width: 82,
                                     child: Column(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
@@ -220,8 +221,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                           alignment: Alignment.centerLeft,
                                           child: Text(
                                             _time(alarm.time),
-                                            style: const TextStyle(
-                                              color: Colors.white,
+                                            style: TextStyle(
+                                              color: colors.onSurface,
                                               fontSize: 25,
                                               fontWeight: FontWeight.w800,
                                             ),
@@ -234,8 +235,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                     child: Text(
                                       alarm.label,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: colors.onSurface,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -277,7 +278,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                   child: Row(
                                     children: [
                                       SizedBox(
-                                        width: 64,
+                                        width: 82,
                                         child: Column(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
@@ -290,8 +291,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                                 rule == null
                                                     ? '--:--'
                                                     : _time(rule.alarmTime),
-                                                style: const TextStyle(
-                                                  color: Colors.white,
+                                                style: TextStyle(
+                                                  color: colors.onSurface,
                                                   fontSize: 25,
                                                   fontWeight: FontWeight.w800,
                                                 ),
@@ -310,8 +311,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                             Text(
                                               shift.type.displayName,
                                               overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                color: Colors.white,
+                                              style: TextStyle(
+                                                color: colors.onSurface,
                                                 fontWeight: FontWeight.w700,
                                               ),
                                             ),
@@ -320,8 +321,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                               DateFormat(
                                                 'EEE d MMM',
                                               ).format(shift.date),
-                                              style: const TextStyle(
-                                                color: purple,
+                                              style: TextStyle(
+                                                color: accent,
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.w700,
                                               ),

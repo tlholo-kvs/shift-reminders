@@ -75,22 +75,27 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const canvas = Color(0xFF11192E);
-    const surface = Color(0xFF1A2146);
-    const purple = Color(0xFF8B5CF6);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final canvas = theme.scaffoldBackgroundColor;
+    final surface = colors.surface;
+    final accent = colors.primary;
+    final timeSelection = theme.brightness == Brightness.light
+        ? colors.surfaceContainerHighest
+        : colors.primary;
 
     return Scaffold(
       backgroundColor: canvas,
       appBar: AppBar(
         backgroundColor: canvas,
-        foregroundColor: Colors.white,
+        foregroundColor: colors.onSurface,
         toolbarHeight: 72,
         leading: TextButton(
           onPressed: () => context.pop(),
-          child: const Text(
+          child: Text(
             'Cancel',
             style: TextStyle(
-              color: Colors.white60,
+              color: colors.onSurfaceVariant,
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
@@ -105,10 +110,10 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
         actions: [
           TextButton(
             onPressed: _weekdays.isEmpty ? null : _save,
-            child: const Text(
+            child: Text(
               'Save',
               style: TextStyle(
-                color: purple,
+                color: accent,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
               ),
@@ -120,10 +125,10 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
           children: [
-            const Text(
+            Text(
               'SET TIME',
               style: TextStyle(
-                color: purple,
+                color: accent,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.2,
@@ -135,7 +140,7 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
               decoration: BoxDecoration(
                 color: surface,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFF3C3F82), width: 1),
+                border: Border.all(color: colors.outline, width: 1),
               ),
               child: Stack(
                 alignment: Alignment.center,
@@ -144,7 +149,7 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
                     height: 64,
                     margin: const EdgeInsets.symmetric(horizontal: 18),
                     decoration: BoxDecoration(
-                      color: purple,
+                      color: timeSelection,
                       borderRadius: BorderRadius.circular(18),
                     ),
                   ),
@@ -158,10 +163,10 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
                             value.toString().padLeft(2, '0'),
                         onChanged: (value) => setState(() => _hour = value),
                       ),
-                      const Text(
+                      Text(
                         ':',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colors.onSurface,
                           fontSize: 42,
                           fontWeight: FontWeight.w900,
                         ),
@@ -199,8 +204,8 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
               title: 'Repeat',
               trailing: Text(
                 _repeatLabel,
-                style: const TextStyle(
-                  color: Colors.white70,
+                style: TextStyle(
+                  color: colors.onSurfaceVariant,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -229,14 +234,14 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: _weekdays.contains(day)
-                            ? purple
-                            : const Color(0xFF252C4A),
+                            ? accent
+                            : colors.surfaceContainerHighest,
                         shape: BoxShape.circle,
                       ),
                       child: Text(
                         ['M', 'T', 'W', 'T', 'F', 'S', 'S'][day - 1],
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colors.onPrimary,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -252,7 +257,10 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
                 child: DropdownButton<String>(
                   value: _toneId,
                   dropdownColor: surface,
-                  icon: const Icon(Icons.chevron_right, color: Colors.white38),
+                  icon: Icon(
+                    Icons.chevron_right,
+                    color: colors.onSurfaceVariant,
+                  ),
                   items: [
                     for (final tone in AlarmTone.tones)
                       DropdownMenuItem(value: tone.id, child: Text(tone.name)),
@@ -290,8 +298,8 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
             ),
             style: FilledButton.styleFrom(
-              backgroundColor: purple,
-              foregroundColor: Colors.white,
+              backgroundColor: colors.primary,
+              foregroundColor: colors.onPrimary,
               minimumSize: const Size.fromHeight(58),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -319,6 +327,7 @@ class _TimeWheel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final controller = FixedExtentScrollController(initialItem: value);
     return SizedBox(
       width: 120,
@@ -338,7 +347,11 @@ class _TimeWheel extends StatelessWidget {
               child: Text(
                 labelBuilder(index),
                 style: TextStyle(
-                  color: selected ? Colors.white : Colors.white38,
+                  color: selected
+                      ? (Theme.of(context).brightness == Brightness.light
+                            ? colors.onSurface
+                            : colors.onPrimary)
+                      : colors.onSurfaceVariant,
                   fontSize: selected ? 42 : 28,
                   fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
                 ),
@@ -366,25 +379,26 @@ class _DetailTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       constraints: const BoxConstraints(minHeight: 68),
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF171A45),
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
-        leading: Icon(icon, color: Colors.white54),
+        leading: Icon(icon, color: colors.onSurfaceVariant),
         title: Text(
           title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: colors.onSurface,
             fontWeight: FontWeight.w700,
           ),
         ),
         subtitle: subtitle == null
             ? null
-            : Text(subtitle!, style: const TextStyle(color: Colors.white38)),
+            : Text(subtitle!, style: TextStyle(color: colors.onSurfaceVariant)),
         trailing: trailing,
       ),
     );

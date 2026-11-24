@@ -12,6 +12,7 @@ class StorageService {
   static const _onboardedKey = 'onboarded';
   static const _manualAlarmsKey = 'manualAlarms';
   static const _alarmToneKey = 'alarmTone';
+  static const _normalWorkWeekKey = 'normalWorkWeek';
 
   Future<void> saveShifts(List<Shift> shifts) async {
     final prefs = await SharedPreferences.getInstance();
@@ -116,12 +117,21 @@ class StorageService {
 
   Future<String> loadAlarmTone() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_alarmToneKey) ??
-        'mixkit_morning_clock_alarm_1003';
+    return prefs.getString(_alarmToneKey) ?? 'mixkit_morning_clock_alarm_1003';
   }
 
   Future<void> saveAlarmTone(String toneId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_alarmToneKey, toneId);
+  }
+
+  Future<bool> loadNormalWorkWeek() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_normalWorkWeekKey) ?? false;
+  }
+
+  Future<void> saveNormalWorkWeek(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_normalWorkWeekKey, enabled);
   }
 }

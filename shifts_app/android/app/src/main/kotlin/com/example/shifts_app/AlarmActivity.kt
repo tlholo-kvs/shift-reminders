@@ -11,6 +11,9 @@ import android.app.KeyguardManager
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.os.PowerManager
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.Gravity
 import android.view.WindowManager
 import android.util.Log
@@ -22,8 +25,31 @@ import io.flutter.embedding.android.FlutterActivity
 class AlarmActivity : FlutterActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var vibrator: Vibrator? = null
     private var alarmLabel = "Alarm"
     private var toneId = "mixkit_morning_clock_alarm_1003"
+
+    private fun startVibration() {
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val manager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE)
+                as VibratorManager
+            manager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+        val pattern = longArrayOf(0, 700, 400, 700, 400)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.vibrate(
+                VibrationEffect.createWaveform(pattern, 0),
+                null,
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator?.vibrate(pattern, 0)
+        }
+        Log.d("RemindMeAlarm", "VIBRATION loop started")
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,6 +124,7 @@ class AlarmActivity : FlutterActivity() {
         ).apply { topMargin = 32 })
         setContentView(layout)
         startLoopingTone()
+        startVibration()
     }
 
     private fun startLoopingTone() {
@@ -125,6 +152,8 @@ class AlarmActivity : FlutterActivity() {
     }
 
     private fun stopAlarm() {
+        vibrator?.cancel()
+        vibrator = null
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
@@ -134,6 +163,8 @@ class AlarmActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        vibrator?.cancel()
+        vibrator = null
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null

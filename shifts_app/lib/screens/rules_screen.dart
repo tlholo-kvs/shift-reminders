@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../models/shift.dart';
-import '../models/shift_rule.dart';
 import '../models/manual_alarm.dart';
 import '../services/alarm_service.dart';
 import '../services/storage_service.dart';
@@ -21,12 +19,11 @@ class RulesScreen extends StatefulWidget {
 }
 
 class _RulesScreenState extends State<RulesScreen> {
-  List<ShiftRule> _rules = [];
   List<ManualAlarm> _manualAlarms = [];
-  TimeOfDay _nightBefore = nightBeforeDefault;
   String _alarmToneId = 'mixkit_morning_clock_alarm_1003';
   bool _loading = true;
   Map<String, dynamic> _alarmDebugInfo = const {};
+  bool _normalWorkWeek = false;
 
   @override
   void initState() {
@@ -35,17 +32,15 @@ class _RulesScreenState extends State<RulesScreen> {
   }
 
   Future<void> _loadData() async {
-    final rules = await widget.storageService.loadRules();
-    final nightBefore = await widget.storageService.loadNightBefore();
     final manualAlarms = await widget.storageService.loadManualAlarms();
     final alarmToneId = await widget.storageService.loadAlarmTone();
+    final normalWorkWeek = await widget.storageService.loadNormalWorkWeek();
     final alarmDebugInfo = await widget.alarmService.getAlarmDebugInfo();
     if (mounted) {
       setState(() {
-        _rules = rules;
-        _nightBefore = nightBefore;
         _manualAlarms = manualAlarms;
         _alarmToneId = alarmToneId;
+        _normalWorkWeek = normalWorkWeek;
         _alarmDebugInfo = alarmDebugInfo;
         _loading = false;
       });
@@ -54,23 +49,6 @@ class _RulesScreenState extends State<RulesScreen> {
 
   String _formatTime(TimeOfDay t) {
     return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
-  }
-
-  Future<void> _editNightBefore() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _nightBefore,
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-        child: child!,
-      ),
-    );
-    if (picked == null) return;
-
-    setState(() {
-      _nightBefore = picked;
-    });
-    await widget.storageService.saveRules(_rules, _nightBefore);
   }
 
   Future<void> _saveManualAlarms() async {
@@ -84,21 +62,34 @@ class _RulesScreenState extends State<RulesScreen> {
     await widget.alarmService.scheduleManualAlarms(_manualAlarms);
   }
 
-  Future<void> _openShiftAlarm(ShiftRule rule) async {
-    final existing = _manualAlarms.where(
-      (alarm) => alarm.id == 'shift_${rule.type.name}',
-    );
-    final alarm = existing.isEmpty
-        ? ManualAlarm(
-            id: 'shift_${rule.type.name}',
-            label: rule.displayName,
-            time: rule.alarmTime,
-            weekdays: const {1, 2, 3, 4, 5, 6, 7},
-            toneId: _alarmToneId,
-          )
-        : existing.first;
+  Future<void> _toggleNormalWorkWeek(bool enabled) async {
+    setState(() => _normalWorkWeek = enabled);
+    await widget.storageService.saveNormalWorkWeek(enabled);
 
-    await _editManualAlarm(alarm, true);
+    if (enabled) {
+      final existingIndex = _manualAlarms.indexWhere(
+        (alarm) => alarm.id == 'normal_8_5',
+      );
+      const preset = ManualAlarm(
+        id: 'normal_8_5',
+        label: 'Normal 8–5',
+        time: TimeOfDay(hour: 6, minute: 0),
+        weekdays: {1, 2, 3, 4, 5},
+        enabled: true,
+      );
+      setState(() {
+        if (existingIndex == -1) {
+          _manualAlarms.add(preset);
+        } else {
+          _manualAlarms[existingIndex] = preset;
+        }
+      });
+    } else {
+      setState(() {
+        _manualAlarms.removeWhere((alarm) => alarm.id == 'normal_8_5');
+      });
+    }
+    await _saveManualAlarms();
   }
 
   Future<void> _editManualAlarm([
@@ -126,10 +117,9 @@ class _RulesScreenState extends State<RulesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0B1020),
-        foregroundColor: Colors.white,
         leading: IconButton(
           onPressed: () => context.go('/'),
           icon: const Icon(Icons.arrow_back_rounded),
@@ -145,78 +135,23 @@ class _RulesScreenState extends State<RulesScreen> {
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Text(
-                    'Office shifts',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
+                CheckboxListTile(
+                  contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  value: _normalWorkWeek,
+                  activeColor: colors.primary,
+                  title: const Text(
+                    'Normal 8–5 job',
+                    style: TextStyle(fontWeight: FontWeight.w800),
                   ),
+                  subtitle: const Text('Create Monday–Friday alarms at 06:00'),
+                  onChanged: (value) => _toggleNormalWorkWeek(value ?? false),
                 ),
-                ..._rules
-                    .asMap()
-                    .entries
-                    .where(
-                      (e) =>
-                          e.value.type != ShiftType.off &&
-                          !e.value.type.name.toLowerCase().contains('wfh'),
-                    )
-                    .map((e) {
-                      final rule = e.value;
-                      return ListTile(
-                        onTap: () => _openShiftAlarm(rule),
-                        title: Text(rule.displayName),
-                        subtitle: Text(
-                          'Alarm at ${_formatTime(rule.alarmTime)} — shift starts ${_formatTime(rule.shiftStart)}',
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit),
-                          tooltip: 'Edit alarm time',
-                          onPressed: () => _openShiftAlarm(rule),
-                        ),
-                      );
-                    }),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Text(
-                    'WFH shifts',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-                ..._rules
-                    .asMap()
-                    .entries
-                    .where(
-                      (e) => e.value.type.name.toLowerCase().contains('wfh'),
-                    )
-                    .map((e) {
-                      final rule = e.value;
-                      return ListTile(
-                        onTap: () => _openShiftAlarm(rule),
-                        title: Text(rule.displayName),
-                        subtitle: Text(
-                          'Alarm at ${_formatTime(rule.alarmTime)} — shift starts ${_formatTime(rule.shiftStart)}',
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit),
-                          tooltip: 'Edit WFH alarm time',
-                          onPressed: () => _openShiftAlarm(rule),
-                        ),
-                      );
-                    }),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
                     'Monday to Sunday alarms',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.onSurface,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.5,
                     ),
@@ -249,7 +184,7 @@ class _RulesScreenState extends State<RulesScreen> {
                     ),
                     subtitle: Text(
                       '${_formatTime(alarm.time)} — $days',
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: colors.onSurface),
                     ),
                     value: alarm.enabled,
                     secondary: IconButton(
@@ -305,22 +240,13 @@ class _RulesScreenState extends State<RulesScreen> {
                   ),
                 ),
                 const Divider(),
-                ListTile(
-                  title: const Text('Night-before notification'),
-                  subtitle: Text(_formatTime(_nightBefore)),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.edit),
-                    tooltip: 'Edit notification time',
-                    onPressed: _editNightBefore,
-                  ),
-                ),
                 const Divider(),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: Text(
                     'Alarm debugging',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.onSurface,
                       fontWeight: FontWeight.w800,
                     ),
                   ),

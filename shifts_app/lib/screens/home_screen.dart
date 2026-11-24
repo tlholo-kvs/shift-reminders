@@ -11,11 +11,13 @@ import '../widgets/shift_tile.dart';
 class HomeScreen extends StatefulWidget {
   final StorageService storageService;
   final AlarmService alarmService;
+  final Map<String, dynamic>? importResult;
 
   const HomeScreen({
     super.key,
     required this.storageService,
     required this.alarmService,
+    this.importResult,
   });
 
   @override
@@ -41,8 +43,7 @@ class _ManualAlarmCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const surface = Color(0xFF1A2146);
-    const accent = Color(0xFF8B5CF6);
+    final colors = Theme.of(context).colorScheme;
     final days = alarm.weekdays
         .map(
           (day) => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day - 1],
@@ -50,7 +51,7 @@ class _ManualAlarmCard extends StatelessWidget {
         .join(', ');
 
     return Material(
-      color: alarm.enabled ? surface : const Color(0xFF12192B),
+      color: alarm.enabled ? colors.surface : colors.surfaceContainer,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
@@ -61,7 +62,7 @@ class _ManualAlarmCard extends StatelessWidget {
           child: Row(
             children: [
               SizedBox(
-                width: 64,
+                width: 82,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -72,7 +73,9 @@ class _ManualAlarmCard extends StatelessWidget {
                       child: Text(
                         _formatTime(alarm.time),
                         style: TextStyle(
-                          color: alarm.enabled ? Colors.white : Colors.white54,
+                          color: alarm.enabled
+                              ? colors.onSurface
+                              : colors.onSurfaceVariant,
                           fontSize: 25,
                           fontWeight: FontWeight.w800,
                           height: 1,
@@ -92,8 +95,8 @@ class _ManualAlarmCard extends StatelessWidget {
                       alarm.label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colors.onSurface,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -104,7 +107,9 @@ class _ManualAlarmCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: alarm.enabled ? accent : Colors.white38,
+                        color: alarm.enabled
+                            ? colors.primary
+                            : colors.onSurfaceVariant,
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                       ),
@@ -114,10 +119,10 @@ class _ManualAlarmCard extends StatelessWidget {
               ),
               Switch(
                 value: alarm.enabled,
-                activeThumbColor: Colors.white,
-                activeTrackColor: accent,
-                inactiveThumbColor: Colors.white,
-                inactiveTrackColor: const Color(0xFFB90F2D),
+                activeThumbColor: colors.onPrimary,
+                activeTrackColor: colors.primary,
+                inactiveThumbColor: colors.onSurfaceVariant,
+                inactiveTrackColor: colors.surfaceContainerHighest,
                 onChanged: onChanged,
               ),
             ],
@@ -142,6 +147,27 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final result = widget.importResult;
+      if (result?['importSuccess'] != true) return;
+      final count = result?['count'] ?? 0;
+      final colors = Theme.of(context).colorScheme;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: colors.surface,
+          content: Text(
+            'Updated successfully — $count shift(s) imported',
+            style: TextStyle(
+              color: colors.onSurface,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      );
+    });
   }
 
   Future<void> _loadData() async {
@@ -185,10 +211,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _deleteManualAlarm(ManualAlarm alarm) async {
+    final colors = Theme.of(context).colorScheme;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF171A45),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text('Delete alarm?'),
         content: Text('Remove "${alarm.label}" and its schedule?'),
@@ -198,9 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFB90F2D),
-            ),
+            style: FilledButton.styleFrom(backgroundColor: colors.error),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Delete'),
           ),
@@ -215,9 +239,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showManualAlarmActions(ManualAlarm alarm) async {
+    final colors = Theme.of(context).colorScheme;
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF171A45),
+      backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -234,13 +259,10 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(
-                Icons.delete_outline,
-                color: Color(0xFFFF6B7A),
-              ),
-              title: const Text(
+              leading: Icon(Icons.delete_outline, color: colors.error),
+              title: Text(
                 'Delete alarm',
-                style: TextStyle(color: Color(0xFFFF6B7A)),
+                style: TextStyle(color: colors.error),
               ),
               onTap: () {
                 Navigator.of(sheetContext).pop();
@@ -254,10 +276,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _deleteShift(Shift shift) async {
+    final colors = Theme.of(context).colorScheme;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF171A45),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text('Delete shift alarm?'),
         content: Text('Remove the alarm for ${shift.type.displayName}?'),
@@ -267,9 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFB90F2D),
-            ),
+            style: FilledButton.styleFrom(backgroundColor: colors.error),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Delete'),
           ),
@@ -288,9 +308,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showShiftAlarmActions(Shift shift) async {
+    final colors = Theme.of(context).colorScheme;
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF171A45),
+      backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -307,13 +328,10 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(
-                Icons.delete_outline,
-                color: Color(0xFFFF6B7A),
-              ),
-              title: const Text(
+              leading: Icon(Icons.delete_outline, color: colors.error),
+              title: Text(
                 'Delete alarm',
-                style: TextStyle(color: Color(0xFFFF6B7A)),
+                style: TextStyle(color: colors.error),
               ),
               onTap: () {
                 Navigator.of(sheetContext).pop();
@@ -382,9 +400,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const canvas = Color(0xFF11192E);
-    const surface = Color(0xFF1A2146);
-    const purple = Color(0xFF8B5CF6);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final canvas = theme.scaffoldBackgroundColor;
+    final surface = colors.surface;
+    final accent = colors.primary;
     final nextAlarm = _nextAlarm();
     final now = DateTime.now();
     final currentTime = DateFormat('HH:mm').format(now);
@@ -404,30 +424,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 52,
                       height: 52,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFB55CF6), Color(0xFF7C3AED)],
-                        ),
+                        color: accent,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.alarm_rounded,
                         size: 34,
-                        color: Colors.white,
+                        color: colors.onPrimary,
                       ),
                     ),
                     const SizedBox(width: 14),
-                    const Text(
-                      'Wake',
+                    Text(
+                      'Remind',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colors.onSurface,
                         fontSize: 34,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const Text(
-                      'Up',
+                    Text(
+                      'Me',
                       style: TextStyle(
-                        color: purple,
+                        color: accent,
                         fontSize: 34,
                         fontWeight: FontWeight.w800,
                       ),
@@ -440,15 +458,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: surface,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(Icons.person_rounded, color: purple),
+                      child: Icon(Icons.person_rounded, color: accent),
                     ),
                   ],
                 ),
                 const SizedBox(height: 18),
                 Text(
                   dateLabel,
-                  style: const TextStyle(
-                    color: Color(0xFF8A90B8),
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
@@ -457,8 +475,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 4),
                 Text(
                   currentTime,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colors.onSurface,
                     fontSize: 52,
                     height: 1,
                     fontWeight: FontWeight.w800,
@@ -466,29 +484,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   "Good afternoon. Here's your schedule.",
-                  style: TextStyle(color: Color(0xFF8A90B8), fontSize: 16),
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 16,
+                  ),
                 ),
                 const SizedBox(height: 18),
                 Container(
                   padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF25235E), Color(0xFF35205F)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: colors.surface,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: purple.withValues(alpha: 0.25)),
+                    border: Border.all(color: colors.outline),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'NEXT ALARM',
                         style: TextStyle(
-                          color: purple,
+                          color: accent,
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                         ),
@@ -499,26 +516,22 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: Text(
                               nextAlarm.title,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: colors.onSurface,
                                 fontSize: 34,
                                 height: 1,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
-                          const Icon(
-                            Icons.alarm_rounded,
-                            color: purple,
-                            size: 52,
-                          ),
+                          Icon(Icons.alarm_rounded, color: accent, size: 52),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Text(
                         nextAlarm.time,
-                        style: const TextStyle(
-                          color: Color(0xFFAAAED0),
+                        style: TextStyle(
+                          color: colors.onSurfaceVariant,
                           fontSize: 15,
                         ),
                       ),
@@ -526,13 +539,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                const Row(
+                Row(
                   children: [
                     Expanded(
                       child: Text(
                         'Your alarms',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colors.onSurface,
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                         ),
@@ -550,13 +563,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 10),
                 if (_manualAlarms.isEmpty && _visibleShifts.isEmpty)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(vertical: 80),
                     child: Center(
                       child: Text(
                         'No alarms yet',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colors.onSurface,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
                         ),
@@ -564,60 +577,151 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   )
                 else ...[
-                  for (var i = 0; i < _manualAlarms.length; i++)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: SizedBox(
-                        height: 84,
-                        child: _ManualAlarmCard(
-                          alarm: _manualAlarms[i],
-                          onTap: () {
-                            final alarm = _manualAlarms[i];
-                            final id = alarm.id.toLowerCase();
-                            final category = id.startsWith('shift_early')
-                                ? 'early'
-                                : id.startsWith('shift_middle')
-                                ? 'middle'
-                                : id.startsWith('shift_late')
-                                ? 'late'
-                                : 'anytime';
-                            context.push('/category/$category');
-                          },
-                          onLongPress: () =>
-                              _showManualAlarmActions(_manualAlarms[i]),
-                          onChanged: (enabled) async {
-                            setState(() {
-                              _manualAlarms[i] = _manualAlarms[i].copyWith(
-                                enabled: enabled,
-                              );
-                            });
-                            await _saveManualAlarms();
-                          },
-                        ),
-                      ),
-                    ),
-                  for (final shift in _visibleShifts)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: SizedBox(
-                        height: 84,
-                        child: ShiftTile(
-                          shift: shift,
-                          rule: _ruleFor(shift),
-                          onTap: () {
-                            final category =
-                                shift.type == ShiftType.earlyShift ||
-                                    shift.type == ShiftType.earlyShiftWFH
-                                ? 'early'
-                                : shift.type == ShiftType.middleShift ||
-                                      shift.type == ShiftType.middleShiftWFH
-                                ? 'middle'
-                                : 'late';
-                            context.push('/category/$category');
-                          },
-                          onLongPress: () => _showShiftAlarmActions(shift),
-                        ),
-                      ),
+                  for (final category in const [
+                    'early',
+                    'middle',
+                    'late',
+                    'anytime',
+                  ])
+                    Builder(
+                      builder: (context) {
+                        final categoryManualAlarms = category == 'anytime'
+                            ? _manualAlarms.where((alarm) {
+                                final id = alarm.id.toLowerCase();
+                                return !id.startsWith('shift_early') &&
+                                    !id.startsWith('shift_middle') &&
+                                    !id.startsWith('shift_late');
+                              }).toList()
+                            : <ManualAlarm>[];
+                        final categoryShifts = category == 'anytime'
+                            ? <Shift>[]
+                            : _visibleShifts.where((shift) {
+                                if (category == 'early') {
+                                  return shift.type == ShiftType.earlyShift ||
+                                      shift.type == ShiftType.earlyShiftWFH;
+                                }
+                                if (category == 'middle') {
+                                  return shift.type == ShiftType.middleShift ||
+                                      shift.type == ShiftType.middleShiftWFH;
+                                }
+                                return shift.type == ShiftType.lateShift ||
+                                    shift.type == ShiftType.lateShiftWFH;
+                              }).toList();
+                        final count =
+                            categoryManualAlarms.length + categoryShifts.length;
+                        if (count == 0) return const SizedBox.shrink();
+                        final title =
+                            '${category[0].toUpperCase()}${category.substring(1)}';
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: colors.surface,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: colors.outline),
+                            ),
+                            child: ExpansionTile(
+                              initiallyExpanded: category == 'anytime',
+                              tilePadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              childrenPadding: const EdgeInsets.fromLTRB(
+                                8,
+                                0,
+                                8,
+                                8,
+                              ),
+                              iconColor: colors.primary,
+                              collapsedIconColor: colors.onSurfaceVariant,
+                              title: Text(
+                                '$title alarms',
+                                style: TextStyle(
+                                  color: colors.onSurface,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 28,
+                                    height: 28,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: colors.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      '$count',
+                                      style: TextStyle(
+                                        color: colors.onPrimary,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Icon(Icons.expand_more),
+                                ],
+                              ),
+                              children: [
+                                for (
+                                  var i = 0;
+                                  i < categoryManualAlarms.length;
+                                  i++
+                                )
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: SizedBox(
+                                      height: 84,
+                                      child: _ManualAlarmCard(
+                                        alarm: categoryManualAlarms[i],
+                                        onTap: () =>
+                                            context.push('/category/$category'),
+                                        onLongPress: () =>
+                                            _showManualAlarmActions(
+                                              categoryManualAlarms[i],
+                                            ),
+                                        onChanged: (enabled) async {
+                                          final index = _manualAlarms
+                                              .indexWhere(
+                                                (item) =>
+                                                    item.id ==
+                                                    categoryManualAlarms[i].id,
+                                              );
+                                          if (index == -1) return;
+                                          setState(() {
+                                            _manualAlarms[index] =
+                                                _manualAlarms[index].copyWith(
+                                                  enabled: enabled,
+                                                );
+                                          });
+                                          await _saveManualAlarms();
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                for (final shift in categoryShifts)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: SizedBox(
+                                      height: 84,
+                                      child: ShiftTile(
+                                        shift: shift,
+                                        rule: _ruleFor(shift),
+                                        onTap: () =>
+                                            context.push('/category/$category'),
+                                        onLongPress: () =>
+                                            _showShiftAlarmActions(shift),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
                 ],
               ],
@@ -626,24 +730,24 @@ class _HomeScreenState extends State<HomeScreen> {
         top: false,
         child: Container(
           height: 88,
-          decoration: const BoxDecoration(
-            color: Color(0xFF171A45),
-            border: Border(top: BorderSide(color: Color(0xFF26365E))),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            border: Border(top: BorderSide(color: colors.outline)),
           ),
           child: Row(
             children: [
               Expanded(
                 child: TextButton(
                   onPressed: () => context.push('/categories'),
-                  child: const Column(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.alarm, color: purple, size: 22),
+                      Icon(Icons.alarm, color: accent, size: 22),
                       SizedBox(height: 4),
                       Text(
                         'Alarms',
                         style: TextStyle(
-                          color: purple,
+                          color: accent,
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),
@@ -671,8 +775,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(fontWeight: FontWeight.w800),
                     ),
                     style: FilledButton.styleFrom(
-                      backgroundColor: purple,
-                      foregroundColor: Colors.white,
+                      backgroundColor: accent,
+                      foregroundColor: colors.onPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -684,19 +788,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: TextButton(
                   onPressed: () =>
                       context.push('/import').then((_) => _loadData()),
-                  child: const Column(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.file_upload_outlined,
-                        color: Colors.white60,
+                        color: colors.onSurfaceVariant,
                         size: 22,
                       ),
                       SizedBox(height: 4),
                       Text(
                         'Import',
                         style: TextStyle(
-                          color: Colors.white60,
+                          color: colors.onSurfaceVariant,
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),
@@ -708,19 +812,19 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: TextButton(
                   onPressed: () => context.go('/rules'),
-                  child: const Column(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.settings_outlined,
-                        color: Colors.white60,
+                        color: colors.onSurfaceVariant,
                         size: 22,
                       ),
                       SizedBox(height: 4),
                       Text(
                         'Settings',
                         style: TextStyle(
-                          color: Colors.white60,
+                          color: colors.onSurfaceVariant,
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),

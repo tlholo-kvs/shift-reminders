@@ -276,7 +276,10 @@ class _ImportScreenState extends State<ImportScreen> {
       await widget.storageService.saveShifts(_parsedShifts);
 
       if (mounted) {
-        context.go('/');
+        context.go(
+          '/',
+          extra: {'importSuccess': true, 'count': _parsedShifts.length},
+        );
       }
     } catch (e) {
       setState(() => _scheduling = false);
@@ -293,11 +296,9 @@ class _ImportScreenState extends State<ImportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1020),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0B1020),
-        foregroundColor: Colors.white,
         leading: IconButton(
           onPressed: _scheduling ? null : () => context.go('/'),
           icon: const Icon(Icons.arrow_back_rounded),
@@ -312,221 +313,211 @@ class _ImportScreenState extends State<ImportScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            return Align(
-              alignment: _hasParsed ? Alignment.topCenter : Alignment.center,
+            return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
-                child: SizedBox(
-                  height: constraints.maxHeight,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 32,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: _hasParsed
-                          ? MainAxisAlignment.start
-                          : MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 28,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF171F36),
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    width: 58,
-                                    height: 58,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE8EEF8),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Text(
-                                      'XLS',
-                                      style: TextStyle(
-                                        color: Color(0xFF15A36A),
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 28,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 58,
+                                  height: 58,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: colors.surfaceContainer,
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                    ),
-                                    child: Icon(
-                                      Icons.sync_alt,
-                                      color: Color(0xFF7867F6),
-                                      size: 34,
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 58,
-                                    height: 58,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF7867F6),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Icon(
-                                      Icons.schedule,
-                                      color: Colors.white,
-                                      size: 30,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Import from File',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'Upload a CSV or Excel file containing your alarms',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white60,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 48,
-                                child: FilledButton.icon(
-                                  icon: const Icon(Icons.cloud_upload_outlined),
-                                  label: const Text(
-                                    'Choose File',
+                                  child: Text(
+                                    'XLS',
                                     style: TextStyle(
-                                      fontWeight: FontWeight.w800,
+                                      color: colors.primary,
+                                      fontWeight: FontWeight.w900,
                                     ),
                                   ),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: const Color(0xFF7867F6),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                  ),
-                                  onPressed: _scheduling ? null : _pickFile,
                                 ),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 12),
+                                  child: Icon(
+                                    Icons.sync_alt,
+                                    color: colors.primary,
+                                    size: 34,
+                                  ),
+                                ),
+                                Container(
+                                  width: 58,
+                                  height: 58,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: colors.primary,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Icons.schedule,
+                                    color: colors.onPrimary,
+                                    size: 30,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Import from File',
+                              style: TextStyle(
+                                color: colors.onSurface,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
                               ),
-                            ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Upload a CSV or Excel file containing your alarms',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: colors.onSurfaceVariant,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: FilledButton.icon(
+                                icon: const Icon(Icons.cloud_upload_outlined),
+                                label: const Text(
+                                  'Choose File',
+                                  style: TextStyle(fontWeight: FontWeight.w800),
+                                ),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: colors.primary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                onPressed: _scheduling ? null : _pickFile,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const SizedBox(height: 18),
+                      Center(
+                        child: Text(
+                          'or',
+                          style: TextStyle(
+                            color: colors.onSurfaceVariant,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _linkController,
+                        enabled: !_scheduling && !_loadingLink,
+                        keyboardType: TextInputType.url,
+                        textInputAction: TextInputAction.go,
+                        decoration: const InputDecoration(
+                          labelText: 'Excel or CSV link',
+                          hintText: 'https://example.com/shifts.xlsx',
+                          border: OutlineInputBorder(),
+                        ),
+                        onSubmitted: (_) => _importFromLink(),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        icon: _loadingLink
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.link),
+                        label: const Text(
+                          'Import from Excel Link',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colors.primary,
+                          side: BorderSide(color: colors.primary),
+                          minimumSize: const Size.fromHeight(48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: _scheduling || _loadingLink
+                            ? null
+                            : _importFromLink,
+                      ),
+                      if (_hasParsed) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          '${_parsedShifts.length} shift(s) found',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 220),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _parsedShifts.length,
+                            itemBuilder: (context, index) {
+                              final shift = _parsedShifts[index];
+                              return ListTile(
+                                dense: true,
+                                leading: const Icon(Icons.schedule),
+                                title: Text(
+                                  DateFormat(
+                                    'EEE d MMM yyyy',
+                                  ).format(shift.date),
+                                ),
+                                subtitle: Text(shift.type.displayName),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const SizedBox(height: 18),
-                        const Center(
-                          child: Text(
-                            'or',
-                            style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _linkController,
-                          enabled: !_scheduling && !_loadingLink,
-                          keyboardType: TextInputType.url,
-                          textInputAction: TextInputAction.go,
-                          decoration: const InputDecoration(
-                            labelText: 'Excel or CSV link',
-                            hintText: 'https://example.com/shifts.xlsx',
-                            border: OutlineInputBorder(),
-                          ),
-                          onSubmitted: (_) => _importFromLink(),
-                        ),
-                        const SizedBox(height: 8),
-                        OutlinedButton.icon(
-                          icon: _loadingLink
-                              ? const SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.link),
-                          label: const Text(
-                            'Import from Excel Link',
-                            style: TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF7867F6),
-                            side: const BorderSide(color: Color(0xFF7867F6)),
+                        FilledButton(
+                          onPressed: _scheduling ? null : _confirmAndSchedule,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colors.primary,
                             minimumSize: const Size.fromHeight(48),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          onPressed: _scheduling || _loadingLink
-                              ? null
-                              : _importFromLink,
-                        ),
-                        if (_hasParsed) ...[
-                          const SizedBox(height: 16),
-                          Text(
-                            '${_parsedShifts.length} shift(s) found',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: _parsedShifts.length,
-                              itemBuilder: (context, index) {
-                                final shift = _parsedShifts[index];
-                                return ListTile(
-                                  dense: true,
-                                  leading: const Icon(Icons.schedule),
-                                  title: Text(
-                                    DateFormat(
-                                      'EEE d MMM yyyy',
-                                    ).format(shift.date),
+                          child: _scheduling
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
                                   ),
-                                  subtitle: Text(shift.type.displayName),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          FilledButton(
-                            onPressed: _scheduling ? null : _confirmAndSchedule,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFF7867F6),
-                              minimumSize: const Size.fromHeight(48),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            child: _scheduling
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Text('Confirm & Schedule Alarms'),
-                          ),
-                        ],
+                                )
+                              : const Text('Confirm & Schedule Alarms'),
+                        ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
               ),
