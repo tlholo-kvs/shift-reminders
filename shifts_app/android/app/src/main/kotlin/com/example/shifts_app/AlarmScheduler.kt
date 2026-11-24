@@ -158,7 +158,20 @@ object AlarmScheduler {
         ) {
             manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pending)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pending)
+            val showIntent = Intent(context, AlarmActivity::class.java).apply {
+                putExtra("label", label)
+                putExtra("toneId", toneId)
+            }
+            val showPending = PendingIntent.getActivity(
+                context,
+                requestCode,
+                showIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            manager.setAlarmClock(
+                AlarmManager.AlarmClockInfo(millis, showPending),
+                pending,
+            )
         } else {
             manager.setExact(AlarmManager.RTC_WAKEUP, millis, pending)
         }

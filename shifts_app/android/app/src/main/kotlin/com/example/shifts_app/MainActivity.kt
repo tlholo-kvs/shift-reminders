@@ -5,6 +5,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import android.content.Context
 import android.util.Log
+import android.app.AlarmManager
 import java.util.TimeZone
 
 class MainActivity : FlutterActivity() {
@@ -48,11 +49,18 @@ class MainActivity : FlutterActivity() {
                 }
                 "getAlarmDebugInfo" -> {
                     val prefs = getSharedPreferences("remindme_native_alarms", Context.MODE_PRIVATE)
+                    val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                    val exactPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                        alarmManager.canScheduleExactAlarms()
+                    } else {
+                        true
+                    }
                     val info = mapOf(
                         "manual" to (prefs.getString("manual", null) ?: ""),
                         "shifts" to (prefs.getString("shifts", null) ?: ""),
                         "requestCodes" to (prefs.getStringSet("requestCodes", emptySet())?.size ?: 0),
                         "lastAlarm" to (prefs.getString("lastAlarm", "None") ?: "None"),
+                        "exactAlarmPermission" to exactPermission,
                     )
                     result.success(info)
                 }

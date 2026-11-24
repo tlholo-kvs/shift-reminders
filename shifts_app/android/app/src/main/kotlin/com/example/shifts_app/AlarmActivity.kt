@@ -7,6 +7,10 @@ import android.content.Intent
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
+import android.app.KeyguardManager
+import android.media.AudioAttributes
+import android.media.AudioManager
+import android.os.PowerManager
 import android.view.Gravity
 import android.view.WindowManager
 import android.util.Log
@@ -17,14 +21,32 @@ import io.flutter.embedding.android.FlutterActivity
 
 class AlarmActivity : FlutterActivity() {
     private var mediaPlayer: MediaPlayer? = null
+    private var wakeLock: PowerManager.WakeLock? = null
     private var alarmLabel = "Alarm"
     private var toneId = "mixkit_morning_clock_alarm_1003"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(
+            PowerManager.FULL_WAKE_LOCK or
+                PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                PowerManager.ON_AFTER_RELEASE,
+            "RemindMe:AlarmScreen",
+        )
+        wakeLock?.acquire(10 * 60 * 1000L)
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+        )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
+            val keyguardManager =
+                getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+            keyguardManager.requestDismissKeyguard(this, null)
         } else {
             @Suppress("DEPRECATION")
             window.addFlags(
@@ -80,17 +102,34 @@ class AlarmActivity : FlutterActivity() {
 
     private fun startLoopingTone() {
         val resourceId = resources.getIdentifier(toneId, "raw", packageName)
-        if (resourceId == 0) return
-        mediaPlayer = MediaPlayer.create(this, resourceId)?.apply {
+        val player = if (resourceId != 0) {
+            MediaPlayer.create(this, resourceId)
+        } else {
+            null
+        }
+        mediaPlayer = player?.apply {
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build(),
+            )
             isLooping = true
+            setVolume(1f, 1f)
             start()
         }
+        Log.d(
+            "RemindMeAlarm",
+            "TONE playback started=$resourceId volumeStream=${AudioManager.STREAM_ALARM}",
+        )
     }
 
     private fun stopAlarm() {
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
+        wakeLock?.release()
+        wakeLock = null
         finishAndRemoveTask()
     }
 

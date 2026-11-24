@@ -60,6 +60,10 @@ class _RulesScreenState extends State<RulesScreen> {
     final picked = await showTimePicker(
       context: context,
       initialTime: _nightBefore,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
     );
     if (picked == null) return;
 
@@ -161,6 +165,12 @@ class _RulesScreenState extends State<RulesScreen> {
                         final picked = await showTimePicker(
                           context: context,
                           initialTime: time,
+                          builder: (context, child) => MediaQuery(
+                            data: MediaQuery.of(
+                              context,
+                            ).copyWith(alwaysUse24HourFormat: true),
+                            child: child!,
+                          ),
                         );
                         if (picked != null) {
                           setDialogState(() => time = picked);
@@ -178,12 +188,7 @@ class _RulesScreenState extends State<RulesScreen> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
-                              time.hourOfPeriod == 0
-                                  ? '12'
-                                  : time.hourOfPeriod.toString().padLeft(
-                                      2,
-                                      '0',
-                                    ),
+                              time.hour.toString().padLeft(2, '0'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 38,
@@ -210,42 +215,6 @@ class _RulesScreenState extends State<RulesScreen> {
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 2,
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: time.hour < 12
-                                        ? const Color(0xFF7867F6)
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: const Text(
-                                    'AM',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'PM',
-                                  style: TextStyle(
-                                    color: time.hour >= 12
-                                        ? const Color(0xFF7867F6)
-                                        : Colors.white54,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
                             ),
                           ],
                         ),
@@ -578,7 +547,8 @@ class _RulesScreenState extends State<RulesScreen> {
                   title: const Text('Alarm debug status'),
                   subtitle: Text(
                     'Last alarm: ${_alarmDebugInfo['lastAlarm'] ?? 'None'} '
-                    '• Scheduled sets: ${_alarmDebugInfo['requestCodes'] ?? 0}',
+                    '• Scheduled sets: ${_alarmDebugInfo['requestCodes'] ?? 0} '
+                    '• Exact permission: ${_alarmDebugInfo['exactAlarmPermission'] ?? 'unknown'}',
                   ),
                   trailing: IconButton(
                     tooltip: 'Refresh debug status',

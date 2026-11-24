@@ -26,6 +26,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
       if (status.isDenied) {
         await Permission.scheduleExactAlarm.request();
       }
+      await Permission.ignoreBatteryOptimizations.request();
     }
 
     await widget.storageService.setOnboarded();

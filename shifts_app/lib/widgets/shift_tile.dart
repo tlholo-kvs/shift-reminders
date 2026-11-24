@@ -7,17 +7,18 @@ class ShiftTile extends StatelessWidget {
   final Shift shift;
   final ShiftRule? rule;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const ShiftTile({
     super.key,
     required this.shift,
     required this.rule,
     this.onTap,
+    this.onLongPress,
   });
 
   String _formatTime(TimeOfDay t) {
-    final hour = t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod;
-    return '$hour:${t.minute.toString().padLeft(2, '0')}';
+    return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -31,7 +32,6 @@ class ShiftTile extends StatelessWidget {
     final alarmTime = rule == null || shift.type == ShiftType.off
         ? '--:--'
         : _formatTime(rule!.alarmTime);
-    final period = rule == null ? '' : _period(rule!.alarmTime);
     final dateName = DateFormat('EEE').format(shift.date).toUpperCase();
     final dateNumber = DateFormat('d MMM').format(shift.date);
 
@@ -40,6 +40,7 @@ class ShiftTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(18),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -64,17 +65,6 @@ class ShiftTile extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (period.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        period,
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -111,9 +101,5 @@ class ShiftTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _period(TimeOfDay time) {
-    return time.hour >= 12 ? 'PM' : 'AM';
   }
 }

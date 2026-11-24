@@ -33,20 +33,36 @@ class AlarmService {
       '[ALARM DEBUG] Scheduling mock alarm in ${delaySeconds}s '
       '(tone=$toneId)',
     );
-    await _alarmChannel.invokeMethod<void>('scheduleMockAlarm', {
-      'delaySeconds': delaySeconds,
-      'toneId': toneId,
-      'label': 'Mock Alarm',
-    });
+    try {
+      await _alarmChannel.invokeMethod<void>('scheduleMockAlarm', {
+        'delaySeconds': delaySeconds,
+        'toneId': toneId,
+        'label': 'Mock Alarm',
+      });
+    } on MissingPluginException {
+      throw StateError(
+        'The installed app package has no mock-alarm native bridge. Reinstall the latest APK.',
+      );
+    }
   }
 
   Future<Map<String, dynamic>> getAlarmDebugInfo() async {
     if (!Platform.isAndroid) return const {};
-    final result = await _alarmChannel.invokeMethod<Map<Object?, Object?>>(
-      'getAlarmDebugInfo',
-    );
-    if (result == null) return const {};
-    return result.map((key, value) => MapEntry(key.toString(), value));
+    try {
+      final result = await _alarmChannel.invokeMethod<Map<Object?, Object?>>(
+        'getAlarmDebugInfo',
+      );
+      if (result == null) return const {};
+      return result.map((key, value) => MapEntry(key.toString(), value));
+    } on MissingPluginException {
+      debugPrint(
+        '[ALARM DEBUG] Native debug channel is unavailable; reinstall the latest APK',
+      );
+      return const {'lastAlarm': 'Native bridge not installed'};
+    } on PlatformException catch (error) {
+      debugPrint('[ALARM DEBUG] Could not read native status: $error');
+      return const {'lastAlarm': 'Unable to read native status'};
+    }
   }
 
   Future<void> _clearScheduledNotificationCache() async {

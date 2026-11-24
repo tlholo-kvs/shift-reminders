@@ -73,8 +73,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }).toList();
 
   String _time(TimeOfDay time) {
-    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-    return '$hour:${time.minute.toString().padLeft(2, '0')}';
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   ShiftRule? _ruleFor(Shift shift) {
@@ -228,14 +227,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                             ),
                                           ),
                                         ),
-                                        Text(
-                                          alarm.time.hour >= 12 ? 'PM' : 'AM',
-                                          style: const TextStyle(
-                                            color: Colors.white54,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
                                       ],
                                     ),
                                   ),
@@ -304,18 +295,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                                   fontSize: 25,
                                                   fontWeight: FontWeight.w800,
                                                 ),
-                                              ),
-                                            ),
-                                            Text(
-                                              rule == null
-                                                  ? ''
-                                                  : rule.alarmTime.hour >= 12
-                                                  ? 'PM'
-                                                  : 'AM',
-                                              style: const TextStyle(
-                                                color: Colors.white54,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w700,
                                               ),
                                             ),
                                           ],
