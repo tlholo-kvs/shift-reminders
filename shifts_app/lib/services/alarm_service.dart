@@ -65,6 +65,25 @@ class AlarmService {
     }
   }
 
+  Future<bool> canDrawOverOtherApps() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final value = await _alarmChannel.invokeMethod<bool>(
+        'canDrawOverOtherApps',
+      );
+      return value ?? false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
+
+  Future<void> openOverlayPermissionSettings() async {
+    if (!Platform.isAndroid) return;
+    await _alarmChannel.invokeMethod<void>('openOverlaySettings');
+  }
+
   Future<void> _clearScheduledNotificationCache() async {
     if (!Platform.isAndroid) return;
     try {

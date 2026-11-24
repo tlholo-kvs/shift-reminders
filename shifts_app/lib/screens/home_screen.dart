@@ -172,135 +172,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _editManualAlarm(ManualAlarm alarm) async {
-    var label = alarm.label;
-    var time = alarm.time;
-    var weekdays = Set<int>.from(alarm.weekdays);
-    var enabled = alarm.enabled;
-    var toneId = alarm.toneId;
-
-    final result = await showDialog<ManualAlarm>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF171A45),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              title: const Text('Edit Alarm'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: TextEditingController(text: label),
-                      decoration: const InputDecoration(labelText: 'Alarm name'),
-                      onChanged: (value) => label = value,
-                    ),
-                    const SizedBox(height: 16),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.schedule),
-                      title: Text(
-                        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      onTap: () async {
-                        final picked = await showTimePicker(
-                          context: dialogContext,
-                          initialTime: time,
-                          builder: (context, child) => MediaQuery(
-                            data: MediaQuery.of(context).copyWith(
-                              alwaysUse24HourFormat: true,
-                            ),
-                            child: child!,
-                          ),
-                        );
-                        if (picked != null) {
-                          setDialogState(() => time = picked);
-                        }
-                      },
-                    ),
-                    Wrap(
-                      spacing: 6,
-                      children: [
-                        for (var day = 1; day <= 7; day++)
-                          FilterChip(
-                            label: Text(
-                              ['M', 'T', 'W', 'T', 'F', 'S', 'S'][day - 1],
-                            ),
-                            selected: weekdays.contains(day),
-                            onSelected: (selected) {
-                              setDialogState(() {
-                                if (selected) {
-                                  weekdays.add(day);
-                                } else {
-                                  weekdays.remove(day);
-                                }
-                              });
-                            },
-                          ),
-                      ],
-                    ),
-                    DropdownButtonFormField<String>(
-                      initialValue: toneId,
-                      decoration: const InputDecoration(labelText: 'Alarm tone'),
-                      items: [
-                        for (final tone in AlarmTone.tones)
-                          DropdownMenuItem(
-                            value: tone.id,
-                            child: Text(tone.name),
-                          ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setDialogState(() => toneId = value);
-                        }
-                      },
-                    ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Enabled'),
-                      value: enabled,
-                      onChanged: (value) {
-                        setDialogState(() => enabled = value);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: weekdays.isEmpty
-                      ? null
-                      : () => Navigator.of(dialogContext).pop(
-                          alarm.copyWith(
-                            label: label.trim().isEmpty
-                                ? 'Weekday alarm'
-                                : label.trim(),
-                            time: time,
-                            weekdays: weekdays,
-                            enabled: enabled,
-                            toneId: toneId,
-                          ),
-                        ),
-                  child: const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    final result = await context.push<ManualAlarm>(
+      '/alarm/editor',
+      extra: alarm,
     );
-
     if (result == null) return;
     setState(() {
       final index = _manualAlarms.indexWhere((item) => item.id == result.id);
@@ -314,9 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF171A45),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text('Delete alarm?'),
         content: Text('Remove "${alarm.label}" and its schedule?'),
         actions: [
@@ -361,7 +234,10 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Color(0xFFFF6B7A)),
+              leading: const Icon(
+                Icons.delete_outline,
+                color: Color(0xFFFF6B7A),
+              ),
               title: const Text(
                 'Delete alarm',
                 style: TextStyle(color: Color(0xFFFF6B7A)),
@@ -382,9 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF171A45),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text('Delete shift alarm?'),
         content: Text('Remove the alarm for ${shift.type.displayName}?'),
         actions: [
@@ -405,8 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (confirmed != true) return;
     setState(() {
       _shifts.removeWhere(
-        (item) =>
-            item.date == shift.date && item.type == shift.type,
+        (item) => item.date == shift.date && item.type == shift.type,
       );
     });
     await widget.storageService.saveShifts(_shifts);
@@ -784,7 +657,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   child: FilledButton.icon(
-                    onPressed: () => context.go('/rules'),
+                    onPressed: () async {
+                      final result = await context.push<ManualAlarm>(
+                        '/alarm/editor',
+                      );
+                      if (result == null) return;
+                      setState(() => _manualAlarms.add(result));
+                      await _saveManualAlarms();
+                    },
                     icon: const Icon(Icons.add, size: 20),
                     label: const Text(
                       'Add Alarm',

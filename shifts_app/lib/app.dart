@@ -5,6 +5,8 @@ import 'screens/import_screen.dart';
 import 'screens/permissions_screen.dart';
 import 'screens/rules_screen.dart';
 import 'screens/category_screen.dart';
+import 'screens/alarm_editor_screen.dart';
+import 'models/manual_alarm.dart';
 import 'services/alarm_service.dart';
 import 'services/storage_service.dart';
 
@@ -75,6 +77,20 @@ class ShiftRemindersApp extends StatelessWidget {
             initialCategory: state.pathParameters['category'],
           ),
         ),
+      ),
+      GoRoute(
+        path: '/alarm/editor',
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          final alarm = extra is ManualAlarm ? extra : null;
+          return _buildRoute(
+            state,
+            AlarmEditorScreen(
+              alarm: alarm,
+              defaultToneId: 'mixkit_morning_clock_alarm_1003',
+            ),
+          );
+        },
       ),
       GoRoute(
         path: '/permissions',

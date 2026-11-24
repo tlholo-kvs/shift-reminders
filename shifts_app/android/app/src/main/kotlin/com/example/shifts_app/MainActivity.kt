@@ -6,6 +6,8 @@ import io.flutter.plugin.common.MethodChannel
 import android.content.Context
 import android.util.Log
 import android.app.AlarmManager
+import android.provider.Settings
+import android.net.Uri
 import java.util.TimeZone
 
 class MainActivity : FlutterActivity() {
@@ -45,6 +47,17 @@ class MainActivity : FlutterActivity() {
                     val label = call.argument<String>("label") ?: "Mock Alarm"
                     Log.d("RemindMeAlarm", "DART scheduleMockAlarm delay=${delaySeconds}s tone=$toneId")
                     AlarmScheduler.scheduleMockAlarm(applicationContext, delaySeconds, label, toneId)
+                    result.success(null)
+                }
+                "canDrawOverOtherApps" -> {
+                    result.success(Settings.canDrawOverlays(applicationContext))
+                }
+                "openOverlaySettings" -> {
+                    val intent = android.content.Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:$packageName"),
+                    ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    applicationContext.startActivity(intent)
                     result.success(null)
                 }
                 "getAlarmDebugInfo" -> {

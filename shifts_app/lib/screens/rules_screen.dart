@@ -105,209 +105,11 @@ class _RulesScreenState extends State<RulesScreen> {
     ManualAlarm? alarm,
     bool returnToAlarms = false,
   ]) async {
-    var label = alarm?.label ?? 'Weekday alarm';
-    var time = alarm?.time ?? const TimeOfDay(hour: 7, minute: 0);
-    var weekdays = Set<int>.from(alarm?.weekdays ?? {1, 2, 3, 4, 5, 6, 7});
-    var enabled = alarm?.enabled ?? true;
-    var toneId = alarm?.toneId ?? _alarmToneId;
-
-    final result = await showDialog<ManualAlarm>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 24,
-              ),
-              backgroundColor: const Color(0xFF171F36),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
-              ),
-              titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-              title: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                    icon: const Icon(Icons.arrow_back),
-                  ),
-                  Expanded(
-                    child: Text(
-                      alarm == null ? 'Add Alarm' : 'Alarm Details',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: TextEditingController(text: label),
-                      decoration: const InputDecoration(
-                        labelText: 'Alarm name',
-                      ),
-                      onChanged: (value) => label = value,
-                    ),
-                    const SizedBox(height: 16),
-                    InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: time,
-                          builder: (context, child) => MediaQuery(
-                            data: MediaQuery.of(
-                              context,
-                            ).copyWith(alwaysUse24HourFormat: true),
-                            child: child!,
-                          ),
-                        );
-                        if (picked != null) {
-                          setDialogState(() => time = picked);
-                        }
-                      },
-                      child: Container(
-                        height: 82,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B1020),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              time.hour.toString().padLeft(2, '0'),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 38,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8),
-                              child: Text(
-                                ':',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 38,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              time.minute.toString().padLeft(2, '0'),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 38,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 6,
-                      children: [
-                        for (var day = 1; day <= 7; day++)
-                          FilterChip(
-                            label: Text(
-                              ['M', 'T', 'W', 'T', 'F', 'S', 'S'][day - 1],
-                            ),
-                            selected: weekdays.contains(day),
-                            onSelected: (selected) {
-                              setDialogState(() {
-                                if (selected) {
-                                  weekdays.add(day);
-                                } else {
-                                  weekdays.remove(day);
-                                }
-                              });
-                            },
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: toneId,
-                      decoration: const InputDecoration(
-                        labelText: 'Alarm tone',
-                      ),
-                      items: [
-                        for (final tone in AlarmTone.tones)
-                          DropdownMenuItem(
-                            value: tone.id,
-                            child: Text(tone.name),
-                          ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setDialogState(() => toneId = value);
-                        }
-                      },
-                    ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Enabled'),
-                      value: enabled,
-                      onChanged: (value) {
-                        setDialogState(() => enabled = value);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: weekdays.isEmpty
-                      ? null
-                      : () => Navigator.of(dialogContext).pop(
-                          ManualAlarm(
-                            id:
-                                alarm?.id ??
-                                DateTime.now().millisecondsSinceEpoch
-                                    .toString(),
-                            label: label.trim().isEmpty
-                                ? 'Weekday alarm'
-                                : label.trim(),
-                            time: time,
-                            weekdays: weekdays,
-                            enabled: enabled,
-                            toneId: toneId,
-                          ),
-                        ),
-                  child: const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    final result = await context.push<ManualAlarm>(
+      '/alarm/editor',
+      extra: alarm,
     );
-
-    if (result == null) {
-      return;
-    }
-
+    if (result == null) return;
     setState(() {
       final index = _manualAlarms.indexWhere((item) => item.id == result.id);
       if (index == -1) {
@@ -560,6 +362,15 @@ class _RulesScreenState extends State<RulesScreen> {
                       setState(() => _alarmDebugInfo = info);
                     },
                   ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.layers_outlined),
+                  title: const Text('Allow display over other apps'),
+                  subtitle: const Text(
+                    'Required so the alarm opens over the lock screen',
+                  ),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: widget.alarmService.openOverlayPermissionSettings,
                 ),
               ],
             ),
