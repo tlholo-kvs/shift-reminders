@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,13 +15,44 @@ class AlarmService {
   static const MethodChannel _timezoneChannel = MethodChannel(
     'com.example.shifts_app/timezone',
   );
+  static const MethodChannel _alarmChannel = MethodChannel(
+    'com.example.shifts_app/timezone',
+  );
+
+  Future<void> scheduleMockAlarm({
+    int delaySeconds = 10,
+    String toneId = 'mixkit_morning_clock_alarm_1003',
+  }) async {
+    if (!Platform.isAndroid) {
+      debugPrint(
+        '[ALARM DEBUG] Mock alarms are currently implemented on Android',
+      );
+      return;
+    }
+    debugPrint(
+      '[ALARM DEBUG] Scheduling mock alarm in ${delaySeconds}s '
+      '(tone=$toneId)',
+    );
+    await _alarmChannel.invokeMethod<void>('scheduleMockAlarm', {
+      'delaySeconds': delaySeconds,
+      'toneId': toneId,
+      'label': 'Mock Alarm',
+    });
+  }
+
+  Future<Map<String, dynamic>> getAlarmDebugInfo() async {
+    if (!Platform.isAndroid) return const {};
+    final result = await _alarmChannel.invokeMethod<Map<Object?, Object?>>(
+      'getAlarmDebugInfo',
+    );
+    if (result == null) return const {};
+    return result.map((key, value) => MapEntry(key.toString(), value));
+  }
 
   Future<void> _clearScheduledNotificationCache() async {
     if (!Platform.isAndroid) return;
     try {
-      await _timezoneChannel.invokeMethod<void>(
-        'clearScheduledNotifications',
-      );
+      await _timezoneChannel.invokeMethod<void>('clearScheduledNotifications');
     } catch (_) {}
   }
 
@@ -46,6 +78,37 @@ class AlarmService {
     List<ShiftRule> rules,
     TimeOfDay nightBefore,
   ) async {
+    if (Platform.isAndroid) {
+      final alarms = <Map<String, dynamic>>[];
+      for (final shift in shifts) {
+        if (shift.isPast || shift.type == ShiftType.off) continue;
+        ShiftRule? rule;
+        try {
+          rule = rules.firstWhere((r) => r.type == shift.type);
+        } catch (_) {
+          continue;
+        }
+        final scheduledDate = tz.TZDateTime(
+          tz.local,
+          shift.date.year,
+          shift.date.month,
+          shift.date.day,
+          rule.alarmTime.hour,
+          rule.alarmTime.minute,
+        );
+        if (!scheduledDate.isAfter(tz.TZDateTime.now(tz.local))) continue;
+        alarms.add({
+          'millis': scheduledDate.millisecondsSinceEpoch,
+          'label':
+              '${rule.displayName} starts at ${_formatTime(rule.shiftStart)}',
+          'toneId': 'mixkit_morning_clock_alarm_1003',
+          'id': 'shift_${shift.date.millisecondsSinceEpoch}',
+        });
+      }
+      await _alarmChannel.invokeMethod<void>('scheduleShiftAlarms', {
+        'alarms': jsonEncode(alarms),
+      });
+    }
     await _clearScheduledNotificationCache();
     await _plugin.cancelAll();
 
@@ -106,20 +169,7 @@ class AlarmService {
         rule.alarmTime.minute,
       );
       if (wakeDateTime.isAfter(now)) {
-        if (Platform.isAndroid) {
-          final intent = AndroidIntent(
-            action: 'android.intent.action.SET_ALARM',
-            arguments: <String, dynamic>{
-              'android.intent.extra.alarm.HOUR': rule.alarmTime.hour,
-              'android.intent.extra.alarm.MINUTES': rule.alarmTime.minute,
-              'android.intent.extra.alarm.MESSAGE':
-                  '${rule.displayName} starts at ${_formatTime(rule.shiftStart)}',
-              'android.intent.extra.alarm.SKIP_UI': true,
-              'android.intent.extra.alarm.VIBRATE': true,
-            },
-          );
-          await intent.launch();
-        } else {
+        if (!Platform.isAndroid) {
           final wakeId = (shift.date.millisecondsSinceEpoch ~/ 60000) * 2 + 1;
           await _plugin.zonedSchedule(
             wakeId,
@@ -153,6 +203,12 @@ class AlarmService {
   }
 
   Future<void> scheduleManualAlarms(List<ManualAlarm> alarms) async {
+    if (Platform.isAndroid) {
+      await _alarmChannel.invokeMethod<void>('scheduleManualAlarms', {
+        'alarms': jsonEncode(alarms.map((alarm) => alarm.toJson()).toList()),
+      });
+      return;
+    }
     if (!Platform.isAndroid) {
       for (var id = 80000; id < 90000; id++) {
         await _plugin.cancel(id);
@@ -172,8 +228,9 @@ class AlarmService {
               'android.intent.extra.alarm.DAYS': <int>[
                 weekday == 7 ? 1 : weekday + 1,
               ],
-              'android.intent.extra.alarm.MESSAGE':
-                  alarm.label.isEmpty ? 'Alarm' : alarm.label,
+              'android.intent.extra.alarm.MESSAGE': alarm.label.isEmpty
+                  ? 'Alarm'
+                  : alarm.label,
               'android.intent.extra.alarm.SKIP_UI': true,
               'android.intent.extra.alarm.VIBRATE': true,
               'android.intent.extra.alarm.RINGTONE':

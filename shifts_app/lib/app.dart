@@ -4,6 +4,7 @@ import 'screens/home_screen.dart';
 import 'screens/import_screen.dart';
 import 'screens/permissions_screen.dart';
 import 'screens/rules_screen.dart';
+import 'screens/category_screen.dart';
 import 'services/alarm_service.dart';
 import 'services/storage_service.dart';
 
@@ -21,9 +22,12 @@ class ShiftRemindersApp extends StatelessWidget {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => HomeScreen(
-          storageService: storageService,
-          alarmService: alarmService,
+        pageBuilder: (context, state) => _buildRoute(
+          state,
+          HomeScreen(
+            storageService: storageService,
+            alarmService: alarmService,
+          ),
         ),
         redirect: (context, state) async {
           final firstLaunch = await storageService.isFirstLaunch();
@@ -33,33 +37,87 @@ class ShiftRemindersApp extends StatelessWidget {
       ),
       GoRoute(
         path: '/import',
-        builder: (context, state) => ImportScreen(
-          storageService: storageService,
-          alarmService: alarmService,
+        pageBuilder: (context, state) => _buildRoute(
+          state,
+          ImportScreen(
+            storageService: storageService,
+            alarmService: alarmService,
+          ),
         ),
       ),
       GoRoute(
         path: '/rules',
-        builder: (context, state) =>
-            RulesScreen(
-              storageService: storageService,
-              alarmService: alarmService,
-            ),
+        pageBuilder: (context, state) => _buildRoute(
+          state,
+          RulesScreen(
+            storageService: storageService,
+            alarmService: alarmService,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/categories',
+        pageBuilder: (context, state) => _buildRoute(
+          state,
+          CategoryScreen(
+            storageService: storageService,
+            alarmService: alarmService,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/category/:category',
+        pageBuilder: (context, state) => _buildRoute(
+          state,
+          CategoryScreen(
+            storageService: storageService,
+            alarmService: alarmService,
+            initialCategory: state.pathParameters['category'],
+          ),
+        ),
       ),
       GoRoute(
         path: '/permissions',
-        builder: (context, state) =>
-            PermissionsScreen(storageService: storageService),
+        pageBuilder: (context, state) => _buildRoute(
+          state,
+          PermissionsScreen(storageService: storageService),
+        ),
       ),
     ],
   );
 
+  CustomTransitionPage<void> _buildRoute(GoRouterState state, Widget child) {
+    return CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 320),
+      reverseTransitionDuration: const Duration(milliseconds: 260),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.035, 0),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    const brandPurple = Color(0xFF7867F6);
-    const alarmNavy = Color(0xFF171F36);
-    const alarmCanvas = Color(0xFF0B1020);
-    const cardSurface = Color(0xFF1B2749);
+    const brandPurple = Color(0xFF8B5CF6);
+    const alarmNavy = Color(0xFF171A45);
+    const alarmCanvas = Color(0xFF11192E);
+    const cardSurface = Color(0xFF1A2146);
 
     return MaterialApp.router(
       title: 'Shift Reminders',
@@ -134,7 +192,9 @@ class ShiftRemindersApp extends StatelessWidget {
         inputDecorationTheme: const InputDecorationTheme(
           labelStyle: TextStyle(color: Colors.white),
           hintStyle: TextStyle(color: Colors.white70),
-          border: OutlineInputBorder(borderSide: BorderSide(color: cardSurface)),
+          border: OutlineInputBorder(
+            borderSide: BorderSide(color: cardSurface),
+          ),
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(color: cardSurface),
           ),

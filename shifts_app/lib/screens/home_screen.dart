@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../models/shift.dart';
 import '../models/shift_rule.dart';
 import '../models/manual_alarm.dart';
@@ -39,13 +40,12 @@ class _ManualAlarmCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const surface = Color(0xFF1B2749);
-    const accent = Color(0xFF7867F6);
+    const surface = Color(0xFF1A2146);
+    const accent = Color(0xFF8B5CF6);
     final period = alarm.time.hour >= 12 ? 'PM' : 'AM';
     final days = alarm.weekdays
         .map(
-          (day) =>
-              ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day - 1],
+          (day) => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day - 1],
         )
         .join(', ');
 
@@ -65,21 +65,28 @@ class _ManualAlarmCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      _formatTime(alarm.time),
-                      style: TextStyle(
-                        color: alarm.enabled ? Colors.white : Colors.white54,
-                        fontSize: 25,
-                        fontWeight: FontWeight.w800,
-                        height: 1,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _formatTime(alarm.time),
+                        style: TextStyle(
+                          color: alarm.enabled ? Colors.white : Colors.white54,
+                          fontSize: 25,
+                          fontWeight: FontWeight.w800,
+                          height: 1,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(period,
-                        style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700)),
+                    Text(
+                      period,
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -205,7 +212,8 @@ class _HomeScreenState extends State<HomeScreen> {
         rule.alarmTime.hour,
         rule.alarmTime.minute,
       );
-      if (candidate.isAfter(now) && (next == null || candidate.isBefore(next))) {
+      if (candidate.isAfter(now) &&
+          (next == null || candidate.isBefore(next))) {
         next = candidate;
         label = rule.displayName;
       }
@@ -229,93 +237,173 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const navy = Color(0xFF171F36);
-    const canvas = Color(0xFF0B1020);
-    const surface = Color(0xFF1B2749);
-    const purple = Color(0xFF7867F6);
+    const canvas = Color(0xFF11192E);
+    const surface = Color(0xFF1A2146);
+    const purple = Color(0xFF8B5CF6);
     final nextAlarm = _nextAlarm();
+    final now = DateTime.now();
+    final currentTime = DateFormat('hh:mm a').format(now);
+    final dateLabel = DateFormat('EEEE, d MMMM').format(now).toUpperCase();
 
     return Scaffold(
       backgroundColor: canvas,
-      appBar: AppBar(
-        backgroundColor: canvas,
-        title: const Text(
-          'Alarm Manager',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Alarm Rules',
-            onPressed: () => context.go('/rules'),
-          ),
-        ],
-      ),
+      appBar: AppBar(backgroundColor: canvas, toolbarHeight: 0, elevation: 0),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
               children: [
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: surface,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: navy,
-                          borderRadius: BorderRadius.circular(12),
+                Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFB55CF6), Color(0xFF7C3AED)],
                         ),
-                        child: const Icon(
-                          Icons.access_alarm_rounded,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.alarm_rounded,
+                        size: 34,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Text(
+                      'Wake',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const Text(
+                      'Up',
+                      style: TextStyle(
+                        color: purple,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: surface,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.person_rounded, color: purple),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  dateLabel,
+                  style: const TextStyle(
+                    color: Color(0xFF8A90B8),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  currentTime,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 52,
+                    height: 1,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Good afternoon. Here's your schedule.",
+                  style: TextStyle(color: Color(0xFF8A90B8), fontSize: 16),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF25235E), Color(0xFF35205F)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: purple.withValues(alpha: 0.25)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'NEXT ALARM',
+                        style: TextStyle(
                           color: purple,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Next Alarm',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
                               nextAlarm.title,
                               style: const TextStyle(
                                 color: Colors.white,
+                                fontSize: 34,
+                                height: 1,
                                 fontWeight: FontWeight.w800,
-                                fontSize: 15,
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              nextAlarm.time,
-                              style: const TextStyle(
-                                color: Colors.white60,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
+                          ),
+                          const Icon(
+                            Icons.alarm_rounded,
+                            color: purple,
+                            size: 52,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        nextAlarm.time,
+                        style: const TextStyle(
+                          color: Color(0xFFAAAED0),
+                          fontSize: 15,
                         ),
                       ),
-                      const Icon(Icons.chevron_right, color: Colors.white38),
                     ],
                   ),
                 ),
                 const SizedBox(height: 14),
+                const Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Your alarms',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '•',
+                      style: TextStyle(
+                        color: Color(0xFF22C55E),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 if (_manualAlarms.isEmpty && _visibleShifts.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 80),
@@ -335,14 +423,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: SizedBox(
-                        height: 72,
+                        height: 84,
                         child: _ManualAlarmCard(
                           alarm: _manualAlarms[i],
-                          onTap: () => context.go('/rules'),
+                          onTap: () {
+                            final alarm = _manualAlarms[i];
+                            final id = alarm.id.toLowerCase();
+                            final category = id.startsWith('shift_early')
+                                ? 'early'
+                                : id.startsWith('shift_middle')
+                                ? 'middle'
+                                : id.startsWith('shift_late')
+                                ? 'late'
+                                : 'anytime';
+                            context.push('/category/$category');
+                          },
                           onChanged: (enabled) async {
                             setState(() {
-                              _manualAlarms[i] =
-                                  _manualAlarms[i].copyWith(enabled: enabled);
+                              _manualAlarms[i] = _manualAlarms[i].copyWith(
+                                enabled: enabled,
+                              );
                             });
                             await _saveManualAlarms();
                           },
@@ -353,10 +453,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: SizedBox(
-                        height: 72,
+                        height: 84,
                         child: ShiftTile(
                           shift: shift,
                           rule: _ruleFor(shift),
+                          onTap: () {
+                            final category =
+                                shift.type == ShiftType.earlyShift ||
+                                    shift.type == ShiftType.earlyShiftWFH
+                                ? 'early'
+                                : shift.type == ShiftType.middleShift ||
+                                      shift.type == ShiftType.middleShiftWFH
+                                ? 'middle'
+                                : 'late';
+                            context.push('/category/$category');
+                          },
                         ),
                       ),
                     ),
@@ -368,16 +479,14 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           height: 88,
           decoration: const BoxDecoration(
-            color: Color(0xFF171F36),
-            border: Border(
-              top: BorderSide(color: Color(0xFF26365E)),
-            ),
+            color: Color(0xFF171A45),
+            border: Border(top: BorderSide(color: Color(0xFF26365E))),
           ),
           child: Row(
             children: [
               Expanded(
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () => context.push('/categories'),
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -423,8 +532,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.file_upload_outlined,
-                          color: Colors.white60, size: 22),
+                      Icon(
+                        Icons.file_upload_outlined,
+                        color: Colors.white60,
+                        size: 22,
+                      ),
                       SizedBox(height: 4),
                       Text(
                         'Import',
@@ -444,8 +556,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.settings_outlined,
-                          color: Colors.white60, size: 22),
+                      Icon(
+                        Icons.settings_outlined,
+                        color: Colors.white60,
+                        size: 22,
+                      ),
                       SizedBox(height: 4),
                       Text(
                         'Settings',

@@ -1,2 +1,2 @@
-Set-Location "c:\Users\tlhol\OneDrive\Documents\shift-reminders-1\shifts_app"
+Set-Location $PSScriptRoot
 & "C:\Users\tlhol\Downloads\flutter\bin\flutter.bat" analyze

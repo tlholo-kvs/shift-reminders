@@ -84,8 +84,7 @@ class _ImportScreenState extends State<ImportScreen> {
             response = candidateResponse;
             break;
           }
-          lastError =
-              'Download failed (${candidateResponse.statusCode})';
+          lastError = 'Download failed (${candidateResponse.statusCode})';
         } catch (e) {
           lastError = e;
         }
@@ -96,8 +95,7 @@ class _ImportScreenState extends State<ImportScreen> {
 
       final contentDisposition =
           response.headers['content-disposition']?.toLowerCase() ?? '';
-      final contentType =
-          response.headers['content-type']?.toLowerCase() ?? '';
+      final contentType = response.headers['content-type']?.toLowerCase() ?? '';
       final fileName = contentDisposition.contains('.xlsx')
           ? 'alarms.xlsx'
           : contentDisposition.contains('.xls')
@@ -155,8 +153,7 @@ class _ImportScreenState extends State<ImportScreen> {
         final fileName = uri.queryParameters['file'];
         final personalIndex = uri.path.indexOf('/personal/');
         if (personalIndex >= 0 && fileName != null) {
-          final personalPath =
-              uri.path.substring(personalIndex, layoutIndex);
+          final personalPath = uri.path.substring(personalIndex, layoutIndex);
           for (final folder in ['Documents', 'Shared Documents']) {
             final sourceUrl =
                 '${uri.scheme}://${uri.host}$personalPath/$folder/${Uri.decodeComponent(fileName)}';
@@ -300,10 +297,11 @@ class _ImportScreenState extends State<ImportScreen> {
       backgroundColor: const Color(0xFF0B1020),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B1020),
-        leading: TextButton.icon(
+        foregroundColor: Colors.white,
+        leading: IconButton(
           onPressed: _scheduling ? null : () => context.go('/'),
-          icon: const Icon(Icons.arrow_back),
-          label: const Text(''),
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
         ),
         leadingWidth: 56,
         title: const Text(
@@ -362,7 +360,9 @@ class _ImportScreenState extends State<ImportScreen> {
                                     ),
                                   ),
                                   const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 12),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
                                     child: Icon(
                                       Icons.sync_alt,
                                       color: Color(0xFF7867F6),
@@ -411,18 +411,17 @@ class _ImportScreenState extends State<ImportScreen> {
                                   icon: const Icon(Icons.cloud_upload_outlined),
                                   label: const Text(
                                     'Choose File',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w800),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
                                   style: FilledButton.styleFrom(
-                                    backgroundColor:
-                                        const Color(0xFF7867F6),
+                                    backgroundColor: const Color(0xFF7867F6),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                   ),
-                                  onPressed:
-                                      _scheduling ? null : _pickFile,
+                                  onPressed: _scheduling ? null : _pickFile,
                                 ),
                               ),
                             ],
@@ -470,9 +469,7 @@ class _ImportScreenState extends State<ImportScreen> {
                           ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFF7867F6),
-                            side: const BorderSide(
-                              color: Color(0xFF7867F6),
-                            ),
+                            side: const BorderSide(color: Color(0xFF7867F6)),
                             minimumSize: const Size.fromHeight(48),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),

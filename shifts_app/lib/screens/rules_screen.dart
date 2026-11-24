@@ -26,6 +26,7 @@ class _RulesScreenState extends State<RulesScreen> {
   TimeOfDay _nightBefore = nightBeforeDefault;
   String _alarmToneId = 'mixkit_morning_clock_alarm_1003';
   bool _loading = true;
+  Map<String, dynamic> _alarmDebugInfo = const {};
 
   @override
   void initState() {
@@ -38,12 +39,14 @@ class _RulesScreenState extends State<RulesScreen> {
     final nightBefore = await widget.storageService.loadNightBefore();
     final manualAlarms = await widget.storageService.loadManualAlarms();
     final alarmToneId = await widget.storageService.loadAlarmTone();
+    final alarmDebugInfo = await widget.alarmService.getAlarmDebugInfo();
     if (mounted) {
       setState(() {
         _rules = rules;
         _nightBefore = nightBefore;
         _manualAlarms = manualAlarms;
         _alarmToneId = alarmToneId;
+        _alarmDebugInfo = alarmDebugInfo;
         _loading = false;
       });
     }
@@ -100,9 +103,7 @@ class _RulesScreenState extends State<RulesScreen> {
   ]) async {
     var label = alarm?.label ?? 'Weekday alarm';
     var time = alarm?.time ?? const TimeOfDay(hour: 7, minute: 0);
-    var weekdays = Set<int>.from(
-      alarm?.weekdays ?? {1, 2, 3, 4, 5, 6, 7},
-    );
+    var weekdays = Set<int>.from(alarm?.weekdays ?? {1, 2, 3, 4, 5, 6, 7});
     var enabled = alarm?.enabled ?? true;
     var toneId = alarm?.toneId ?? _alarmToneId;
 
@@ -112,7 +113,10 @@ class _RulesScreenState extends State<RulesScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 24,
+              ),
               backgroundColor: const Color(0xFF171F36),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(28),
@@ -176,7 +180,10 @@ class _RulesScreenState extends State<RulesScreen> {
                             Text(
                               time.hourOfPeriod == 0
                                   ? '12'
-                                  : time.hourOfPeriod.toString().padLeft(2, '0'),
+                                  : time.hourOfPeriod.toString().padLeft(
+                                      2,
+                                      '0',
+                                    ),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 38,
@@ -250,7 +257,9 @@ class _RulesScreenState extends State<RulesScreen> {
                       children: [
                         for (var day = 1; day <= 7; day++)
                           FilterChip(
-                            label: Text(['M', 'T', 'W', 'T', 'F', 'S', 'S'][day - 1]),
+                            label: Text(
+                              ['M', 'T', 'W', 'T', 'F', 'S', 'S'][day - 1],
+                            ),
                             selected: weekdays.contains(day),
                             onSelected: (selected) {
                               setDialogState(() {
@@ -349,10 +358,11 @@ class _RulesScreenState extends State<RulesScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B1020),
-        leading: TextButton.icon(
+        foregroundColor: Colors.white,
+        leading: IconButton(
           onPressed: () => context.go('/'),
-          icon: const Icon(Icons.arrow_back),
-          label: const Text(''),
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
         ),
         leadingWidth: 56,
         title: const Text(
@@ -444,9 +454,15 @@ class _RulesScreenState extends State<RulesScreen> {
                 ..._manualAlarms.map((alarm) {
                   final days = alarm.weekdays
                       .map(
-                        (day) =>
-                            ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                                [day - 1],
+                        (day) => [
+                          'Mon',
+                          'Tue',
+                          'Wed',
+                          'Thu',
+                          'Fri',
+                          'Sat',
+                          'Sun',
+                        ][day - 1],
                       )
                       .join(', ');
                   return SwitchListTile(
@@ -525,6 +541,54 @@ class _RulesScreenState extends State<RulesScreen> {
                     icon: const Icon(Icons.edit),
                     tooltip: 'Edit notification time',
                     onPressed: _editNightBefore,
+                  ),
+                ),
+                const Divider(),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: Text(
+                    'Alarm debugging',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.play_circle_outline),
+                  title: const Text('Create mock alarm'),
+                  subtitle: const Text(
+                    'Starts the full-screen alarm in 10 seconds',
+                  ),
+                  onTap: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    await widget.alarmService.scheduleMockAlarm();
+                    final info = await widget.alarmService.getAlarmDebugInfo();
+                    if (!mounted) return;
+                    setState(() => _alarmDebugInfo = info);
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Mock alarm scheduled for 10 seconds'),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.bug_report_outlined),
+                  title: const Text('Alarm debug status'),
+                  subtitle: Text(
+                    'Last alarm: ${_alarmDebugInfo['lastAlarm'] ?? 'None'} '
+                    '• Scheduled sets: ${_alarmDebugInfo['requestCodes'] ?? 0}',
+                  ),
+                  trailing: IconButton(
+                    tooltip: 'Refresh debug status',
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () async {
+                      final info = await widget.alarmService
+                          .getAlarmDebugInfo();
+                      if (!mounted) return;
+                      setState(() => _alarmDebugInfo = info);
+                    },
                   ),
                 ),
               ],

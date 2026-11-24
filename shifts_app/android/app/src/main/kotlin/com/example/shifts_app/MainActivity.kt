@@ -4,6 +4,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import android.content.Context
+import android.util.Log
 import java.util.TimeZone
 
 class MainActivity : FlutterActivity() {
@@ -21,6 +22,39 @@ class MainActivity : FlutterActivity() {
                         Context.MODE_PRIVATE,
                     ).edit().clear().apply()
                     result.success(null)
+                }
+                "scheduleManualAlarms" -> {
+                    val alarms = call.argument<String>("alarms") ?: "[]"
+                    AlarmScheduler.scheduleManualAlarms(applicationContext, alarms)
+                    result.success(null)
+                }
+                "scheduleShiftAlarms" -> {
+                    val alarms = call.argument<String>("alarms") ?: "[]"
+                    AlarmScheduler.scheduleShiftAlarms(applicationContext, alarms)
+                    result.success(null)
+                }
+                "cancelAllAppAlarms" -> {
+                    AlarmScheduler.cancelAll(applicationContext)
+                    result.success(null)
+                }
+                "scheduleMockAlarm" -> {
+                    val delaySeconds = call.argument<Int>("delaySeconds") ?: 10
+                    val toneId = call.argument<String>("toneId")
+                        ?: "mixkit_morning_clock_alarm_1003"
+                    val label = call.argument<String>("label") ?: "Mock Alarm"
+                    Log.d("RemindMeAlarm", "DART scheduleMockAlarm delay=${delaySeconds}s tone=$toneId")
+                    AlarmScheduler.scheduleMockAlarm(applicationContext, delaySeconds, label, toneId)
+                    result.success(null)
+                }
+                "getAlarmDebugInfo" -> {
+                    val prefs = getSharedPreferences("remindme_native_alarms", Context.MODE_PRIVATE)
+                    val info = mapOf(
+                        "manual" to (prefs.getString("manual", null) ?: ""),
+                        "shifts" to (prefs.getString("shifts", null) ?: ""),
+                        "requestCodes" to (prefs.getStringSet("requestCodes", emptySet())?.size ?: 0),
+                        "lastAlarm" to (prefs.getString("lastAlarm", "None") ?: "None"),
+                    )
+                    result.success(info)
                 }
                 else -> result.notImplemented()
             }
