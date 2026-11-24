@@ -23,6 +23,7 @@ class ManualAlarm {
   final String label;
   final TimeOfDay time;
   final Set<int> weekdays;
+  final DateTime? scheduledDate;
   final bool enabled;
   final String toneId;
 
@@ -31,6 +32,7 @@ class ManualAlarm {
     required this.label,
     required this.time,
     required this.weekdays,
+    this.scheduledDate,
     this.enabled = true,
     this.toneId = 'mixkit_morning_clock_alarm_1003',
   });
@@ -39,6 +41,8 @@ class ManualAlarm {
     String? label,
     TimeOfDay? time,
     Set<int>? weekdays,
+    DateTime? scheduledDate,
+    bool clearScheduledDate = false,
     bool? enabled,
     String? toneId,
   }) {
@@ -47,19 +51,31 @@ class ManualAlarm {
       label: label ?? this.label,
       time: time ?? this.time,
       weekdays: weekdays ?? this.weekdays,
+      scheduledDate: clearScheduledDate
+          ? null
+          : scheduledDate ?? this.scheduledDate,
       enabled: enabled ?? this.enabled,
       toneId: toneId ?? this.toneId,
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'label': label,
-    'time': {'hour': time.hour, 'minute': time.minute},
-    'weekdays': weekdays.toList(),
-    'enabled': enabled,
-    'toneId': toneId,
-  };
+  Map<String, dynamic> toJson() {
+    final occurrenceDate =
+        scheduledDate ?? (weekdays.isEmpty ? DateTime.now() : null);
+    return {
+      'id': id,
+      'label': label,
+      'time': {'hour': time.hour, 'minute': time.minute},
+      'weekdays': weekdays.toList(),
+      'scheduledDate': occurrenceDate == null
+          ? null
+          : '${occurrenceDate.year.toString().padLeft(4, '0')}-'
+                '${occurrenceDate.month.toString().padLeft(2, '0')}-'
+                '${occurrenceDate.day.toString().padLeft(2, '0')}',
+      'enabled': enabled,
+      'toneId': toneId,
+    };
+  }
 
   factory ManualAlarm.fromJson(Map<String, dynamic> json) {
     final timeValue = json['time'];
@@ -73,7 +89,13 @@ class ManualAlarm {
               .map((day) => day.toInt())
               .where((day) => day >= 1 && day <= 7)
               .toSet()
-        : <int>{1, 2, 3, 4, 5, 6, 7};
+        : weekdaysValue == null
+        ? <int>{1, 2, 3, 4, 5, 6, 7}
+        : <int>{};
+    final scheduledDate = json['scheduledDate'] is String
+        ? DateTime.tryParse(json['scheduledDate'] as String)
+        : null;
+    final today = DateTime.now();
 
     return ManualAlarm(
       id:
@@ -84,7 +106,16 @@ class ManualAlarm {
         hour: (time['hour'] is num) ? (time['hour'] as num).toInt() : 7,
         minute: (time['minute'] is num) ? (time['minute'] as num).toInt() : 0,
       ),
-      weekdays: weekdays.isEmpty ? {1, 2, 3, 4, 5, 6, 7} : weekdays,
+      weekdays: weekdays,
+      scheduledDate: scheduledDate == null
+          ? (weekdays.isEmpty
+                ? DateTime(today.year, today.month, today.day)
+                : null)
+          : DateTime(
+              scheduledDate.year,
+              scheduledDate.month,
+              scheduledDate.day,
+            ),
       enabled: json['enabled'] as bool? ?? true,
       toneId: json['toneId'] as String? ?? 'mixkit_morning_clock_alarm_1003',
     );

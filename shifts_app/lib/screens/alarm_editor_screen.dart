@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../models/manual_alarm.dart';
 
 class AlarmEditorScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
   late int _hour;
   late int _minute;
   late Set<int> _weekdays;
+  late DateTime _scheduledDate;
   late bool _enabled;
   late String _toneId;
   bool _snoozeEnabled = true;
@@ -34,7 +36,10 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
     );
     _hour = alarm?.time.hour ?? 6;
     _minute = alarm?.time.minute ?? 0;
-    _weekdays = Set<int>.from(alarm?.weekdays ?? {1, 2, 3, 4, 5});
+    _weekdays = Set<int>.from(alarm?.weekdays ?? const {});
+    final now = DateTime.now();
+    final alarmDate = alarm?.scheduledDate ?? now;
+    _scheduledDate = DateTime(alarmDate.year, alarmDate.month, alarmDate.day);
     _enabled = alarm?.enabled ?? true;
     _toneId = alarm?.toneId ?? widget.defaultToneId;
   }
@@ -46,11 +51,13 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
   }
 
   String get _repeatLabel {
+    if (_weekdays.isEmpty) {
+      return 'Once · ${DateFormat('EEE d MMM').format(_scheduledDate)}';
+    }
     if (_weekdays.length == 7) return 'Every day';
     if (_weekdays.length == 5 && _weekdays.containsAll({1, 2, 3, 4, 5})) {
       return 'Monday - Friday';
     }
-    if (_weekdays.isEmpty) return 'Never';
     return _weekdays
         .map(
           (day) => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day - 1],
@@ -58,8 +65,46 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
         .join(', ');
   }
 
+  Future<void> _selectScheduledDate() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final initialDate = _scheduledDate.isBefore(today) ? today : _scheduledDate;
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: today,
+      lastDate: DateTime(now.year + 5, now.month, now.day),
+    );
+    if (selectedDate == null || !mounted) return;
+    setState(() {
+      _scheduledDate = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+      );
+    });
+  }
+
   void _save() {
-    if (_weekdays.isEmpty) return;
+    final now = DateTime.now();
+    final scheduledAt = DateTime(
+      _scheduledDate.year,
+      _scheduledDate.month,
+      _scheduledDate.day,
+      _hour,
+      _minute,
+    );
+    if (_weekdays.isEmpty && !scheduledAt.isAfter(now)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Choose a future time or date for this one-time alarm.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final alarm = ManualAlarm(
       id: widget.alarm?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       label: _labelController.text.trim().isEmpty
@@ -67,6 +112,7 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
           : _labelController.text.trim(),
       time: TimeOfDay(hour: _hour, minute: _minute),
       weekdays: _weekdays,
+      scheduledDate: _weekdays.isEmpty ? _scheduledDate : null,
       enabled: _enabled,
       toneId: _toneId,
     );
@@ -109,7 +155,7 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
         centerTitle: true,
         actions: [
           TextButton(
-            onPressed: _weekdays.isEmpty ? null : _save,
+            onPressed: _save,
             child: Text(
               'Save',
               style: TextStyle(
@@ -202,13 +248,24 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
             _DetailTile(
               icon: Icons.repeat,
               title: 'Repeat',
-              trailing: Text(
-                _repeatLabel,
-                style: TextStyle(
-                  color: colors.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              trailing: _weekdays.isEmpty
+                  ? TextButton(
+                      onPressed: _selectScheduledDate,
+                      child: Text(
+                        _repeatLabel,
+                        style: TextStyle(
+                          color: colors.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      _repeatLabel,
+                      style: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -223,8 +280,17 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
                       setState(() {
                         if (_weekdays.contains(day)) {
                           _weekdays.remove(day);
+                          if (_weekdays.isEmpty) {
+                            final now = DateTime.now();
+                            _scheduledDate = DateTime(
+                              now.year,
+                              now.month,
+                              now.day,
+                            );
+                          }
                         } else {
                           _weekdays.add(day);
+                          _scheduledDate = DateTime.now();
                         }
                       });
                     },
@@ -241,7 +307,9 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
                       child: Text(
                         ['M', 'T', 'W', 'T', 'F', 'S', 'S'][day - 1],
                         style: TextStyle(
-                          color: colors.onPrimary,
+                          color: _weekdays.contains(day)
+                              ? colors.onPrimary
+                              : colors.onSurfaceVariant,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -291,7 +359,7 @@ class _AlarmEditorScreenState extends State<AlarmEditorScreen> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           child: FilledButton.icon(
-            onPressed: _weekdays.isEmpty ? null : _save,
+            onPressed: _save,
             icon: const Icon(Icons.check),
             label: const Text(
               'Save alarm',

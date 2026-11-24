@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../models/manual_alarm.dart';
 import '../services/alarm_service.dart';
 import '../services/storage_service.dart';
@@ -149,7 +150,7 @@ class _RulesScreenState extends State<RulesScreen> {
                 Padding(
                   padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
-                    'Monday to Sunday alarms',
+                    'Manual alarms',
                     style: TextStyle(
                       color: colors.onSurface,
                       fontWeight: FontWeight.w800,
@@ -158,19 +159,23 @@ class _RulesScreenState extends State<RulesScreen> {
                   ),
                 ),
                 ..._manualAlarms.map((alarm) {
-                  final days = alarm.weekdays
-                      .map(
-                        (day) => [
-                          'Mon',
-                          'Tue',
-                          'Wed',
-                          'Thu',
-                          'Fri',
-                          'Sat',
-                          'Sun',
-                        ][day - 1],
-                      )
-                      .join(', ');
+                  final days = alarm.weekdays.isEmpty
+                      ? alarm.scheduledDate == null
+                            ? 'Once'
+                            : 'Once · ${DateFormat('EEE d MMM').format(alarm.scheduledDate!)}'
+                      : alarm.weekdays
+                            .map(
+                              (day) => [
+                                'Mon',
+                                'Tue',
+                                'Wed',
+                                'Thu',
+                                'Fri',
+                                'Sat',
+                                'Sun',
+                              ][day - 1],
+                            )
+                            .join(', ');
                   return SwitchListTile(
                     title: Row(
                       children: [

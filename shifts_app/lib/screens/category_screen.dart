@@ -232,13 +232,45 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                     ),
                                   ),
                                   Expanded(
-                                    child: Text(
-                                      alarm.label,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: colors.onSurface,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          alarm.label,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: colors.onSurface,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          alarm.weekdays.isEmpty
+                                              ? alarm.scheduledDate == null
+                                                    ? 'Once'
+                                                    : 'Once · ${DateFormat('EEE d MMM').format(alarm.scheduledDate!)}'
+                                              : alarm.weekdays
+                                                    .map(
+                                                      (day) => [
+                                                        'Mon',
+                                                        'Tue',
+                                                        'Wed',
+                                                        'Thu',
+                                                        'Fri',
+                                                        'Sat',
+                                                        'Sun',
+                                                      ][day - 1],
+                                                    )
+                                                    .join(', '),
+                                          style: TextStyle(
+                                            color: colors.onSurfaceVariant,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   Switch(

@@ -44,11 +44,16 @@ class _ManualAlarmCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final days = alarm.weekdays
-        .map(
-          (day) => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day - 1],
-        )
-        .join(', ');
+    final days = alarm.weekdays.isEmpty
+        ? alarm.scheduledDate == null
+              ? 'Once'
+              : 'Once · ${DateFormat('EEE d MMM').format(alarm.scheduledDate!)}'
+        : alarm.weekdays
+              .map(
+                (day) =>
+                    ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day - 1],
+              )
+              .join(', ');
 
     return Material(
       color: alarm.enabled ? colors.surface : colors.surfaceContainer,
@@ -350,6 +355,24 @@ class _HomeScreenState extends State<HomeScreen> {
     String label = 'No upcoming alarm';
 
     for (final alarm in _manualAlarms.where((alarm) => alarm.enabled)) {
+      if (alarm.weekdays.isEmpty) {
+        final date = alarm.scheduledDate;
+        if (date == null) continue;
+        final candidate = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          alarm.time.hour,
+          alarm.time.minute,
+        );
+        if (candidate.isAfter(now) &&
+            (next == null || candidate.isBefore(next))) {
+          next = candidate;
+          label = alarm.label;
+        }
+        continue;
+      }
+
       for (final weekday in alarm.weekdays) {
         var candidate = DateTime(
           now.year,

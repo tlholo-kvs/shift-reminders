@@ -253,6 +253,32 @@ class AlarmService {
     for (final alarm in alarms) {
       if (!alarm.enabled) continue;
 
+      if (alarm.weekdays.isEmpty) {
+        final date = alarm.scheduledDate;
+        if (date == null) continue;
+        final scheduledDate = tz.TZDateTime(
+          tz.local,
+          date.year,
+          date.month,
+          date.day,
+          alarm.time.hour,
+          alarm.time.minute,
+        );
+        if (!scheduledDate.isAfter(tz.TZDateTime.now(tz.local))) continue;
+        final id = 80000 + (alarm.id.hashCode.abs() % 100) * 7;
+        await _plugin.zonedSchedule(
+          id,
+          alarm.label.isEmpty ? 'Alarm' : alarm.label,
+          'Scheduled once',
+          scheduledDate,
+          _manualAlarmDetails(alarm),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+        continue;
+      }
+
       for (final weekday in alarm.weekdays) {
         if (Platform.isAndroid) {
           final intent = AndroidIntent(
@@ -288,23 +314,7 @@ class AlarmService {
           alarm.label.isEmpty ? 'Alarm' : alarm.label,
           'Scheduled for ${_formatWeekday(weekday)}',
           scheduledDate,
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              'manual_alarm_${alarm.toneId}',
-              'Manual Alarms',
-              channelDescription: 'User-created Monday to Sunday alarms',
-              importance: Importance.max,
-              priority: Priority.max,
-              sound: RawResourceAndroidNotificationSound(alarm.toneId),
-              enableVibration: true,
-              fullScreenIntent: true,
-              category: AndroidNotificationCategory.alarm,
-            ),
-            iOS: const DarwinNotificationDetails(
-              presentAlert: true,
-              presentSound: true,
-            ),
-          ),
+          _manualAlarmDetails(alarm),
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
@@ -312,6 +322,26 @@ class AlarmService {
         );
       }
     }
+  }
+
+  NotificationDetails _manualAlarmDetails(ManualAlarm alarm) {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        'manual_alarm_${alarm.toneId}',
+        'Manual Alarms',
+        channelDescription: 'User-created alarms',
+        importance: Importance.max,
+        priority: Priority.max,
+        sound: RawResourceAndroidNotificationSound(alarm.toneId),
+        enableVibration: true,
+        fullScreenIntent: true,
+        category: AndroidNotificationCategory.alarm,
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentSound: true,
+      ),
+    );
   }
 
   tz.TZDateTime _nextWeekday(int weekday, int hour, int minute) {

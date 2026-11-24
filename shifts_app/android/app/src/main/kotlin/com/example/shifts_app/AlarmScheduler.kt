@@ -43,15 +43,39 @@ object AlarmScheduler {
             if (!alarm.optBoolean("enabled", true)) continue
             val weekdays = alarm.getJSONArray("weekdays")
             val time = alarm.getJSONObject("time")
+            val label = alarm.optString("label", "Alarm")
+            val toneId = alarm.optString("toneId", "mixkit_morning_clock_alarm_1003")
+            val id = alarm.optString("id", "alarm")
+            if (weekdays.length() == 0) {
+                val dateParts = alarm.optString("scheduledDate", "")
+                    .split("-")
+                    .mapNotNull { it.toIntOrNull() }
+                val now = Calendar.getInstance()
+                val year = dateParts.getOrNull(0) ?: now.get(Calendar.YEAR)
+                val month = dateParts.getOrNull(1) ?: now.get(Calendar.MONTH) + 1
+                val day = dateParts.getOrNull(2) ?: now.get(Calendar.DAY_OF_MONTH)
+                val target = Calendar.getInstance().apply {
+                    set(year, month - 1, day, time.getInt("hour"), time.getInt("minute"), 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                scheduleOnce(
+                    context,
+                    target.timeInMillis,
+                    label,
+                    toneId,
+                    "${id}_once",
+                )
+                continue
+            }
             for (d in 0 until weekdays.length()) {
                 scheduleWeekly(
                     context,
                     weekdays.getInt(d),
                     time.getInt("hour"),
                     time.getInt("minute"),
-                    alarm.optString("label", "Alarm"),
-                    alarm.optString("toneId", "mixkit_morning_clock_alarm_1003"),
-                    alarm.optString("id", "alarm"),
+                    label,
+                    toneId,
+                    id,
                 )
             }
         }
